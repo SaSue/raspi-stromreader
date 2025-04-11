@@ -255,12 +255,10 @@ while True:
                 logging.debug("Wirkeinheit %s = %s", wirk_unit.hex(), wirk_unit_string )
                 
                 logging.debug("Die aktuelle Wirkleistung beträgt %s %s",wirk_value_int, wirk_unit_string)
-            
-    
                      
         else: 
             crc_check_sml = False
-            
+        logging.debug(" ")    
         logging.debug("✅ CRC: erwartet %04X, berechnet %04X → %s",
                      crc_expected,
                      crc_calculated,
