@@ -40,7 +40,7 @@ while True:
         crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
         crc_expected = int.from_bytes(crc_raw, "little")
 
-        crc_func = crcmod.mkCrcFun(0x11021, initCrc=0xFFFF, rev=False, xorOut=0x0000)
+        crc_func = crcmod.mkCrcFun(0x11021, initCrc=0xFFFF, rev=True, xorOut=0xFFFF)
 
       #  crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
         crc_calculated = crc_func(sml_data)
