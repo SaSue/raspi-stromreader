@@ -179,13 +179,13 @@ while True:
             if idx_wirk > 0:
             
                 #Scale Faktor raussuchen
-                idx_wirk_scale_offset = 22 # offset für die Skala
+                idx_wirk_scale_offset = 18 # offset für die Skala
                 wirk_scale = sml_data[idx_wirk + idx_wirk_scale_offset:idx_wirk + idx_wirk_scale_offset + 1]     # 1 Byte für den Scale raussuchen
                 wirk_scale_int = pow(10, int.from_bytes(wirk_scale, byteorder="big", signed=True)) # potenz den scale errechnen
                 logging.debug("Faktor %s = %s", wirk_scale.hex(), wirk_scale_int)
                 
                 # Wirk errechnen
-                idx_wirk_value_offset = 24 # offset für den wert
+                idx_wirk_value_offset = 19 # offset für den wert
                 wirk_value = sml_data[idx_wirk + idx_wirk_value_offset:idx_wirk + idx_wirk_value_offset + 5]     # 9 Byte für den Wert
                 wirk_value_int = int(wirk_value.hex(), 16) * wirk_scale_int # potenz den scale errechnen
                 logging.debug("Wirkwert %s = %s", wirk_value.hex(), wirk_value_int)
