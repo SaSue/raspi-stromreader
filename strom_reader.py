@@ -30,7 +30,7 @@ while True:
         end_idx = buffer.find(b"\x1b\x1b\x1b\x1a", start_idx)
 
         # Telegramm gefunden?
-        if start_idx != -1 and end_idx != -1 and len(buffer) >= end_idx + 6:
+        if start_idx != -1 and end_idx != -1 and len(buffer) >= end_idx + 7:
             try:
                 # SML-Daten + CRC-Bytes
                 sml_data = buffer[start_idx:end_idx + 5]
