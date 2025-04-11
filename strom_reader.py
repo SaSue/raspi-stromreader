@@ -7,9 +7,7 @@ import crcmod
 import argparse
 from datetime import datetime
 import os
-
-import argparse
-import os
+import json
 import logging
 
 def decode_manufacturer(hex_string):
