@@ -5,12 +5,16 @@ import logging
 import binascii
 import crcmod
 from datetime import datetime
+import os
+
+debug_env = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes")
+debug_mode = args.debug or debug_env
 
 PORT = "/dev/ttyUSB0"
 BAUDRATE = 9600
 
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG if debug_mode else logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )

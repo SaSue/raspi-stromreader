@@ -8,5 +8,7 @@ services:
       - "/dev/ttyUSB0:/dev/ttyUSB0"
     volumes:
       - ./logs:/app/logs
+    environment:
+      - DEBUG=1
     restart: unless-stopped
     tty: true
