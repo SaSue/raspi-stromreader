@@ -73,7 +73,7 @@ while True:
             bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
             idx_bezug = sml_data.find(bezug_kennung)
             
-            logging.debug("Bezug an Stelle ", idx_bezug)
+            logging.debug("Bezug an Stelle %s", idx_bezug)
             
         else: 
             crc_check_sml = False
