@@ -100,14 +100,6 @@ while True:
 
             
             if idx_bezug > 0:
-                #Einheit raussuchen
-                idx_bezug_unit_offset = 19 # offset für die Einheit
-                bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]   # 2 Byte raussuchen
-                if bezug_unit == b"\x62\x1e": # schauen ob kWh
-                    bezug_unit_string = "Wh"
-                else: # ansonten unbekannt
-                    bezug_unit_string = "unbekannte Einheit"
-                logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
             
                 #Scale Faktor raussuchen
                 idx_bezug_scale_offset = 22 # offset für die Einheit
@@ -121,6 +113,19 @@ while True:
                 bezug_value_int = int(bezug_value.hex(), 16) * bezug_scale_int # potenz den scale errechnen
                 logging.debug("Bezugswert %s = %s", bezug_value.hex(), bezug_value_int)
                 
+                #Einheit raussuchen
+                idx_bezug_unit_offset = 19 # offset für die Einheit
+                bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]   # 2 Byte raussuchen
+                if bezug_unit == b"\x62\x1e": # schauen ob Wh
+                    logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), "Wh")
+                    bezug_unit_string = "kWh"
+                    bezug_kvalue_int = bezug_value_int / 1000
+                else: # ansonten unbekannt
+                    bezug_unit_string = "unbekannte Einheit"
+                    logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
+                    bezug_kvalue_int = bezug_value_int 
+                
+                logging.debug("Der Bezug beträgt ",bezug_kvalue_int, bezug_unit_string)
              
             else:
                 bezug_unit_string = "kein Bezug"
