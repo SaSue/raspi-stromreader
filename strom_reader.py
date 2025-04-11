@@ -74,7 +74,7 @@ while True:
         logging.debug("✅ CRC: erwartet %04X, berechnet %04X → %s",
                      crc_expected,
                      crc_calculated,
-                     "✅ gültig" if crc_check_sml == true else "❌ ungültig")
+                     "✅ gültig" if crc_check_sml == True else "❌ ungültig")
 
         # Buffer bereinigen
         buffer = buffer[idx + 7:]
