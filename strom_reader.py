@@ -14,6 +14,8 @@ import logging
 
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
+einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
+wirk_kennung = b"\x07\x01\x00\x10\x07\x00\xff"
 
 #sml kennzeichen
 sml_ende = b"\x1b\x1b\x1b\x1a"
@@ -126,12 +128,12 @@ while True:
              
             else:
                 bezug_unit_string = "kein Bezug"
+                bezug_kvalue_int = 0
                 
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
             logging.debug(" ")
             logging.debug("*** Einspeisung ****")
             idx_einspeisung = 0
-            einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
             idx_einspeisung = sml_data.find(einspeisung_kennung)
             
             logging.debug("Einspeisung %s an Stelle %s",einspeisung_kennung.hex(), idx_einspeisung)
@@ -163,19 +165,41 @@ while True:
                     einspeisung_kvalue_int = einspeisung_value_int 
                 
                 logging.debug("Die Einspeisung beträgt %s %s",einspeisung_kvalue_int, einspeisung_unit_string)
-
-
-
-
-
+            else:
+                einspeisung_unit_string = "keine Einspeisung"
+                einspeisung_kvalue_int = 0
 
             # Wirkleistung gesamt suchen 07 01 00 10 07 00 ff
+            logging.debug(" ")
+            logging.debug("*** Wirkleistung aktuell ****")
             idx_wirk = 0
-            wirk_kennung = b"\x07\x01\x00\x10\x07\x00\xff"
-            idx_wirk = sml_data.find(wirk_kennung)
+            idx_wirk = sml_data.find(wirk_kennung)   
+            logging.debug("Wirkleistung %s an Stelle %s", wirk_kennung.hex(), idx_wirk)  
+
+            if idx_wirk > 0:
             
-            logging.debug("Wirkleistung %s an Stelle %s", wirk_kennung.hex(), idx_wirk)   
+                #Scale Faktor raussuchen
+                idx_wirk_scale_offset = 22 # offset für die Skala
+                wirk_scale = sml_data[idx_wirk + idx_wirk_scale_offset:idx_wirk + idx_wirk_scale_offset + 1]     # 1 Byte für den Scale raussuchen
+                wirk_scale_int = pow(10, int.from_bytes(wirk_scale, byteorder="big", signed=True)) # potenz den scale errechnen
+                logging.debug("Faktor %s = %s", wirk_scale.hex(), wirk_scale_int)
+                
+                # Wirk errechnen
+                idx_wirk_value_offset = 24 # offset für den wer
+                wirk_value = sml_data[idx_wirk + idx_wirk_value_offset:idx_wirk + idx_wirk_value_offset + 8]     # 9 Byte für den Wert
+                wirk_value_int = int(wirk_value.hex(), 16) * wirk_scale_int # potenz den scale errechnen
+                logging.debug("Bezugswert %s = %s", wirk_value.hex(), wirk_value_int)
+                
+                #Einheit raussuchen
+                idx_wirk_unit_offset = 16 # offset für die Einheit
+                wirk_unit = sml_data[idx_wirk + idx_wirk_unit_offset:idx_wirk + idx_wirk_unit_offset + 2]   # 2 Byte raussuchen
+                if wirk_unit == b"\x62\x1b": # schauen ob W
+                    wirk_unit_string = "W" # ich will aber kWh
+                else: # ansonten unbekannt
+                    wirk_unit_string = "unbekannte Einheit"
+                logging.debug("Wirkeinheit %s = %s", wirk_unit.hex(), wirk_unit_string )
             
+    
                      
         else: 
             crc_check_sml = False
