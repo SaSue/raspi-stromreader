@@ -81,8 +81,17 @@ while True:
             einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
             idx_einspeisung = sml_data.find(einspeisung_kennung)
             
-            logging.debug("Bezug an Stelle %s", idx_einspeisung)
+            logging.debug("Einspeisung an Stelle %s", idx_einspeisung)
+
+            # Wirkleistung gesamt suchen 07 01 00 10 07 00 ff
+            idx_wirk = 0
+            wirk_kennung = b"\x07\x01\x00\x10\x07\x00\xff"
+            idx_wirk = sml_data.find(wirk_kennung)
             
+            logging.debug("Wirkleistung an Stelle %s", idx_wirk)   
+            
+            
+                     
         else: 
             crc_check_sml = False
             
