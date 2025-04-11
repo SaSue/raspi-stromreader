@@ -89,6 +89,7 @@ while True:
             
             logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
             
+            
             # Bezug gesamt suchen
             logging.debug(" ")
             logging.debug("*** Bezug ****")
@@ -96,22 +97,34 @@ while True:
             idx_bezug = sml_data.find(bezug_kennung)           
             logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
             
-            #Einheit raussuchen
-            idx_bezug_unit_offset = 19 # offset für die Einheit
-            bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]     
-            if bezug_unit == b"\x62\x1e":
-                bezug_unit_string = "kWh"
-            else:
-                bezug_unit_string = "unbekannte Einheit"
-            logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
-            
-            #Scale Faktor raussuchen
-            idx_bezug_scale_offset = 22 # offset für die Einheit
-            bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 1]     
-            bezug_scale_int = pow(10, int.from_bytes(bezug_scale, byteorder="big", signed=True))
-            logging.debug("Faktor %s = %s", bezug_scale.hex(), bezug_scale_int)
-            
 
+            
+            if idx_bezug > 0:
+                #Einheit raussuchen
+                idx_bezug_unit_offset = 19 # offset für die Einheit
+                bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]   # 2 Byte raussuchen
+                if bezug_unit == b"\x62\x1e": # schauen ob kWh
+                    bezug_unit_string = "kWh"
+                else: # ansonten unbekannt
+                    bezug_unit_string = "unbekannte Einheit"
+                logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
+            
+                #Scale Faktor raussuchen
+                idx_bezug_scale_offset = 22 # offset für die Einheit
+                bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 1]     # 1 Byte für den Scale raussuchen
+                bezug_scale_int = pow(10, int.from_bytes(bezug_scale, byteorder="big", signed=True)) # potenz den scale errechnen
+                logging.debug("Faktor %s = %s", bezug_scale.hex(), bezug_scale_int)
+                
+                # Bezug errechnen
+                idx_bezug_value_offset = 23 # offset für den wer
+                bezug_value = sml_data[idx_bezug + idx_bezug_value_offset:idx_bezug + idx_bezug_value_offset + 9]     # 9 Byte für den Wert
+                bezug_value_int = int.from_bytes(bezug_value, byteorder="big", signed=True) * bezug_scale_int # potenz den scale errechnen
+                logging.debug("Bezugswert %s = %s", bezug_value.hex(), bezug_value_int)
+                
+             
+             else:
+                bezug_unit_string = "kein Bezug"
+                
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
             idx_einspeisung = 0
             einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
