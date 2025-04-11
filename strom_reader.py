@@ -68,13 +68,13 @@ while True:
         if crc_expected == crc_calculated:
             crc_check_sml = true    
             logging.debug("Verarbeitung SML Telegram starten!")
-        else 
+        else: 
             crc_check_sml = false
             
         logging.debug("✅ CRC: erwartet %04X, berechnet %04X → %s",
                      crc_expected,
                      crc_calculated,
-                     if "✅ gültig" if crc_check_sml == true else "❌ ungültig")
+                     "✅ gültig" if crc_check_sml == true else "❌ ungültig")
 
         # Buffer bereinigen
         buffer = buffer[idx + 7:]
