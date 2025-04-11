@@ -76,9 +76,9 @@ while True:
             
             logging.debug("Hersteller an Stelle %s", idx_vendor)
             
-            # Seriennummer suchen 07 01 00 00 00 09 ff
+            # Seriennummer suchen 01 00 60 01 00 FF
             idx_sn = 0
-            sn_kennung = b"\x07\x01\x00\x00\x00\x09\xff"
+            sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
             idx_sn = sml_data.find(sn_kennung)
             
             logging.debug("SN an Stelle %s", idx_sn)
