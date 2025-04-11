@@ -40,9 +40,10 @@ while True:
             end_idx = telegram.find(b"\x1b\x1b\x1b\x1a")
             if end_idx == -1:
                 continue
+            crc_raw = telegram[end_idx+8:end_idx+12]
             end_idx += 4  # bis einschließlich \x1a
             sml_data = telegram[:end_idx]
-            crc_raw = telegram[end_idx:end_idx + 3]
+           
             crc_expected = int.from_bytes(crc_raw, byteorder="little")
 
             crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
