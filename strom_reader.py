@@ -41,6 +41,7 @@ while True:
             if end_idx == -1:
                 continue
             crc_raw = telegram[end_idx+8:end_idx+12]
+            logging.info("🔢 CRC RAW: %s", crc_raw.hex())
             end_idx += 4  # bis einschließlich \x1a
             sml_data = telegram[:end_idx]
            
