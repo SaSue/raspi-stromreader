@@ -68,6 +68,13 @@ while True:
         if crc_expected == crc_calculated:
             crc_check_sml = True    
             logging.debug("Verarbeitung SML Telegram starten!")
+            
+            # Bezug gesamt suchen
+            bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
+            idx_bezug = sml_data.find(bezug_kennung)
+            
+            logging.debug("Bezug an Stelle ", idx_bezug)
+            
         else: 
             crc_check_sml = False
             
