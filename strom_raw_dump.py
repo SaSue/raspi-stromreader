@@ -8,7 +8,7 @@ BAUDRATE = 9600
 LOGFILE = "strom_raw_dump.log"
 
 SML_START = bytes.fromhex("1b1b1b1b01010101")
-SML_END = bytes.fromhex("1b1b1b1b1a")
+SML_END_MARKER = bytes.fromhex("1b1b1b1b1a")
 
 
 def crc16_sml(data):
@@ -29,12 +29,16 @@ def find_telegram(buffer):
     if start_idx == -1:
         return None, buffer
 
-    end_idx = buffer.find(SML_END, start_idx + len(SML_START))
-    if end_idx == -1 or end_idx + len(SML_END) + 2 > len(buffer):
+    end_idx = buffer.find(SML_END_MARKER, start_idx + len(SML_START))
+    if end_idx == -1:
         return None, buffer
 
-    telegram = buffer[start_idx:end_idx + len(SML_END) + 2]  # +2 für CRC
-    remaining = buffer[end_idx + len(SML_END) + 2:]
+    # Suche nach genau 3 zusätzliche Bytes nach dem Endmarker (Padding + CRC)
+    if end_idx + len(SML_END_MARKER) + 3 > len(buffer):
+        return None, buffer
+
+    telegram = buffer[start_idx:end_idx + len(SML_END_MARKER) + 3]  # +3 für Padding + CRC
+    remaining = buffer[end_idx + len(SML_END_MARKER) + 3:]
     return telegram, remaining
 
 
@@ -57,8 +61,8 @@ def dump_serial():
                             hex_data = telegram.hex()
                             length = len(telegram)
 
-                            # CRC prüfen (vorletzte 2 Bytes vor Endzeichen)
-                            crc_data = telegram[:-2]  # alles bis vor CRC
+                            # Letzte 3 Bytes: Padding + CRC → [padding][CRC1][CRC2]
+                            crc_data = telegram[:-2]  # alles bis vor letztem CRC
                             crc_expected = int.from_bytes(telegram[-2:], "big")
                             crc_actual = crc16_sml(crc_data)
                             crc_ok = crc_actual == crc_expected
