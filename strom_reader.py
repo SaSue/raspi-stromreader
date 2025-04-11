@@ -37,12 +37,12 @@ while True:
 
             # Telegramm extrahieren (inkl. 1a)
             telegram = buffer[start_idx:]
-            end_idx = telegram.find(b"\x1b\x1b\x1b\x1a\x03")
+            end_idx = telegram.find(b"\x1b\x1b\x1b\x1a")
             if end_idx == -1:
                 continue
             end_idx += 4  # bis einschließlich \x1a
             sml_data = telegram[:end_idx]
-            crc_raw = telegram[end_idx:end_idx + 2]
+            crc_raw = telegram[end_idx:end_idx + 3]
             crc_expected = int.from_bytes(crc_raw, byteorder="little")
 
             crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
