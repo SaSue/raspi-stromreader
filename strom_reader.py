@@ -69,6 +69,20 @@ while True:
             crc_check_sml = True    
             logging.debug("Verarbeitung SML Telegram starten!")
             
+            # HErsteller suchen 07 81 81 c7 82 03 ff
+            idx_vendor = 0
+            vendor_kennung = b"\x07\x81\x81\xC7\x82\x03\xff"
+            idx_vendor = sml_data.find(vendor_kennung)
+            
+            logging.debug("Hersteller an Stelle %s", idx_vendor)
+            
+            # Seriennummer suchen 07 01 00 00 00 09 ff
+            idx_sn = 0
+            sn_kennung = b"\x07\x01\x00\x00\x00\x09\xff"
+            idx_sn = sml_data.find(sn_kennung)
+            
+            logging.debug("SN an Stelle %s", idx_sn)
+            
             # Bezug gesamt suchen
             idx_bezug = 0
             bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
