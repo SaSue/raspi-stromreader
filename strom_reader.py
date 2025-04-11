@@ -266,9 +266,9 @@ while True:
                 
             current_time = time.time()
             if current_time - last_json_write >= wait_time:
-                    now = datetime.now()
-                    timestamp = now.isoformat()
-                    date_str = now.strftime("%Y-%m-%d")
+                now = datetime.now()
+                timestamp = now.isoformat()
+                date_str = now.strftime("%Y-%m-%d")
     
                 output_data = {
                     "leistung": wirk_value_int, 
