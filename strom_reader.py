@@ -86,7 +86,7 @@ while True:
             vendor_str = ""
             if idx_vendor > 1:
                 vendor_byte = sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4]
-                vendor_str = vendor_byte.str()
+                vendor_str = decode_manufacturer(vendor_byte.hex()))
             else:
                 vendor_str = "unbekannter Hersteller"
             logging.debug("Vendor %s als %s", vendor_byte.hex(), vendor_str)
@@ -222,3 +222,23 @@ while True:
 
         # Buffer bereinigen
         buffer = buffer[idx + 7:]
+        
+        
+        
+    def decode_manufacturer(hex_string):
+        """
+        Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
+        Ignoriert das erste Byte (Längen-/Typkennzeichen).
+        """
+        # Sicherstellen, dass der String eine gerade Anzahl von Zeichen hat
+        hex_string = hex_string.strip().lower()
+        if len(hex_string) < 8:
+            raise ValueError("Ungültiger Hersteller-Code: zu kurz")
+
+        # Die letzten 3 Bytes (6 Zeichen) nehmen
+        ascii_part = hex_string[-6:]
+        try:
+            readable = bytes.fromhex(ascii_part).decode("ascii")
+            return readable
+        except Exception as e:
+            return f"Fehler beim Decodieren: {e}"
