@@ -8,6 +8,7 @@ services:
       - "/dev/ttyUSB0:/dev/ttyUSB0"
     volumes:
       - ./logs:/app/logs
+      - /usr/share/nginx/html:/app/data
     environment:
       - DEBUG=1
     restart: unless-stopped

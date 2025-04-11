@@ -9,6 +9,16 @@ from datetime import datetime
 import os
 import json
 import logging
+from pathlib import Path
+
+# Speicherpfade
+OUTPUT_PATH = Path("/app/data")
+HISTORY_PATH = OUTPUT_PATH / "history"
+HISTORY_PATH.mkdir(parents=True, exist_ok=True)
+
+# Zeitkontrolle für JSON-Speicherung
+last_json_write = 0
+wait_time=10
 
 def decode_manufacturer(hex_string):
     """
@@ -253,7 +263,47 @@ while True:
                 logging.debug("Wirkeinheit %s = %s", wirk_unit.hex(), wirk_unit_string )
                 
                 logging.debug("Die aktuelle Wirkleistung beträgt %s %s",wirk_value_int, wirk_unit_string)
-                     
+                
+            current_time = time.time()
+            if current_time - last_json_write >= wait_time:
+                    now = datetime.now()
+                    timestamp = now.isoformat()
+                    date_str = now.strftime("%Y-%m-%d")
+    
+                output_data = { 
+                    "leistung": wirk_value_int, 
+                    "bezug": bezug_kvalue_int,
+                    "einspeisung": einspeisung_kvalue_int,
+                    "seriennummer": sn_string,
+                    "timestamp": datetime.now().isoformat(),
+                    "zaehlername": vendor_str
+                }
+                
+                try:
+                    # Aktuelle Datei speichern
+                    with open(OUTPUT_PATH / "emh.json", "w") as f:
+                        json.dump(output_data, f, indent=2)
+                    logging.debug("💾 JSON-Daten gespeichert (%s)", timestamp)
+                    
+                  # Historie laden oder leere Liste
+                    history_file = HISTORY_PATH / f"{date_str}.json"
+                    if history_file.exists():
+                        with open(history_file, "r") as f:
+                            history_data = json.load(f)                
+                    else:
+                        history_data = []
+                        
+                    history_data.append(output_data)  
+                    
+                    # Historie zurückschreiben
+                    with open(history_file, "w") as f:
+                        json.dump(history_data, f, indent=2)
+
+                    last_json_write = current_time
+                    
+                except Exception as e:
+                    logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
+                    
         else: 
             crc_check_sml = False
         logging.debug(" ")    
