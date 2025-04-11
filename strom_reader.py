@@ -30,13 +30,14 @@ while True:
     # Prüfe auf SML-Ende
     if buffer.endswith(b"\x1b\x1b\x1b\x1b\x1a") and len(buffer) > 100:
         try:
+            logging.info("=== START =============================================================")
             start_idx = buffer.find(b"\x1b\x1b\x1b\x1b")
             if start_idx == -1:
                 buffer = b""
                 continue
-
             # Finde erstes komplettes Telegramm
             end_idx = buffer.find(b"\x1b\x1b\x1b\x1b\x1a", start_idx)
+            logging.info("Position des Endbytes [%s]", end_idx)
             if end_idx == -1 or len(buffer) < end_idx + 5:
                 continue
 
