@@ -93,6 +93,8 @@ while True:
             logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
             
             # Bezug gesamt suchen
+            logging.debug(" ")
+            logging.debug("*** Bezug ****")
             idx_bezug = 0
             idx_bezug = sml_data.find(bezug_kennung)           
             logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
