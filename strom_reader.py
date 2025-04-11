@@ -18,7 +18,7 @@ HISTORY_PATH.mkdir(parents=True, exist_ok=True)
 
 # Zeitkontrolle für JSON-Speicherung
 last_json_write = 0
-wait_time=10
+wait_time=60
 
 def decode_manufacturer(hex_string):
     """
@@ -281,7 +281,7 @@ while True:
                 
                 try:
                     # Aktuelle Datei speichern
-                    with open(OUTPUT_PATH / "emh.json", "w") as f:
+                    with open(OUTPUT_PATH / "strom.json", "w") as f:
                         json.dump(output_data, f, indent=2)
                     logging.debug("💾 JSON-Daten gespeichert (%s)", timestamp)
                     
