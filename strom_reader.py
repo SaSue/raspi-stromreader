@@ -81,8 +81,17 @@ while True:
             idx_vendor = 0
             vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
             idx_vendor = sml_data.find(vendor_kennung)
-            
             logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
+            idx_vendor_offset = 11
+            vendor_str = ""
+            if idx_vendor > 1:
+                vendor_byte = sml_data[idx_vendor + idx_vendor_offset:idx_bezug + idx_vendor_offset + 4]
+                vendor_str = vendor_byte.str()
+            else:
+                vendor_str = "unbekannter Hersteller"
+            logging.debug("Vendor %s als %s", vendor_byte.hex(), vendor_str)
+            
+          
             
             # Seriennummer suchen 01 00 60 01 00 FF
             idx_sn = 0
