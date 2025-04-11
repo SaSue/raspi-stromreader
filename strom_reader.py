@@ -38,7 +38,7 @@ while True:
                 sml_data = buffer[start_idx:end_idx + 5]
                 crc_raw = buffer[end_idx + 5:end_idx + 7]
                 crc_expected = int.from_bytes(crc_raw, byteorder="little")
-                crc_calculated = binascii.crc_hexq(sml_data, 0xFFFF)
+                crc_calculated = binascii.crc_hqx(sml_data, 0xFFFF)
 
                 logging.info("")
                 logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
