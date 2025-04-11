@@ -40,11 +40,10 @@ while True:
         crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
         crc_expected = int.from_bytes(crc_raw, "little")
 
-        data = bytes.fromhex(sml_data)
         crc_func = crcmod.mkCrcFun(0x11021, initCrc=0xFFFF, rev=False, xorOut=0x0000)
 
       #  crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
-        crc_calculated = crc_func(data)
+        crc_calculated = crc_func(sml_data)
         logging.info("")
         logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
