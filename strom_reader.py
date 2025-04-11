@@ -78,6 +78,8 @@ while True:
             logging.debug("Verarbeitung SML Telegram starten!")
             
             # HErsteller suchen 07010060320101
+            logging.debug(" ")
+            logging.debug("*** Bezug ****")
             idx_vendor = 0
             vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
             idx_vendor = sml_data.find(vendor_kennung)
@@ -85,20 +87,28 @@ while True:
             idx_vendor_offset = 11
             vendor_str = ""
             if idx_vendor > 1:
-                vendor_byte = sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4]
-                vendor_str = decode_manufacturer(vendor_byte.hex())
+                vendor_str = decode_manufacturer((sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4])).hex())
             else:
                 vendor_str = "unbekannter Hersteller"
-            logging.debug("Vendor %s als %s", vendor_byte.hex(), vendor_str)
+            logging.debug("Vendor %s", vendor_str)
             
           
             
             # Seriennummer suchen 01 00 60 01 00 FF
+            logging.debug(" ")
+            logging.debug("*** Gerätekennung ****")
             idx_sn = 0
             sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
             idx_sn = sml_data.find(sn_kennung)
+            ogging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
+            idx_sn_offset = 11
             
-            logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
+            if idx_sn > 1:
+                sn_string = parse_device_id((sml_data[idx_sn + idx_sn_offset:idx_sn + idx_sn_offset + 11]).hex())
+            else:
+                sn_string = "unbekannte Gerätekennung"
+            
+            logging.debug("SN %s", sn_string)
               
             # Bezug gesamt suchen
             logging.debug(" ")
@@ -225,20 +235,38 @@ while True:
         
         
         
-    def decode_manufacturer(hex_string):
-        """
-        Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
-        Ignoriert das erste Byte (Längen-/Typkennzeichen).
-        """
-        # Sicherstellen, dass der String eine gerade Anzahl von Zeichen hat
-        hex_string = hex_string.strip().lower()
-        if len(hex_string) < 8:
-            raise ValueError("Ungültiger Hersteller-Code: zu kurz")
+def decode_manufacturer(hex_string):
+    """
+    Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
+    Ignoriert das erste Byte (Längen-/Typkennzeichen).
+    """
+    # Sicherstellen, dass der String eine gerade Anzahl von Zeichen hat
+    hex_string = hex_string.strip().lower()
+    if len(hex_string) < 8:
+        raise ValueError("Ungültiger Hersteller-Code: zu kurz")
 
-        # Die letzten 3 Bytes (6 Zeichen) nehmen
-        ascii_part = hex_string[-6:]
-        try:
-            readable = bytes.fromhex(ascii_part).decode("ascii")
-            return readable
-        except Exception as e:
-            return f"Fehler beim Decodieren: {e}"
+    # Die letzten 3 Bytes (6 Zeichen) nehmen
+    ascii_part = hex_string[-6:]
+    try:
+        readable = bytes.fromhex(ascii_part).decode("ascii")
+        return readable
+    except Exception as e:
+        return f"Fehler beim Decodieren: {e}"
+
+def parse_device_id(hex_string):
+    """
+    Extrahiert die Gerätekennung aus einem vollständigen Hex-String.
+    Erwartet mindestens 10 Bytes nach dem TL-Feld (z. B. '0b0a01454d480000b8ef79').
+    """
+    try:
+        # Nimmt nur den tatsächlichen Inhalt ohne das TL-Feld (z. B. nach '0b0a01')
+        payload = hex_string[6:]  # ab Index 6 → 454d480000b8ef79
+        ascii_part = payload[:6]  # 454d48
+        serial_part = payload[6:] # 0000b8ef79
+
+        hersteller = bytes.fromhex(ascii_part).decode("ascii")
+        seriennummer = serial_part.upper()
+
+        return f"{hersteller}-{seriennummer}"
+    except Exception as e:
+        return f"Fehler beim Parsen: {e}"
