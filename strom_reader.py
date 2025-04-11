@@ -70,10 +70,18 @@ while True:
             logging.debug("Verarbeitung SML Telegram starten!")
             
             # Bezug gesamt suchen
+            idx_bezug = 0
             bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
             idx_bezug = sml_data.find(bezug_kennung)
             
             logging.debug("Bezug an Stelle %s", idx_bezug)
+            
+            # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
+            idx_einspeisung = 0
+            einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
+            idx_einspeisung = sml_data.find(einspeisung_kennung)
+            
+            logging.debug("Bezug an Stelle %s", idx_einspeisung)
             
         else: 
             crc_check_sml = False
