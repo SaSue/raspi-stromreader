@@ -11,7 +11,7 @@ BAUDRATE = 9600
 
 # Logging konfigurieren
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
@@ -27,7 +27,7 @@ while True:
         continue
 
     buffer += byte
-
+    logging.debug("Puffer: %s", buffer.hex())
     # Suche nach Startmarker (erste 4 Bytes)
     start_idx = buffer.find(b"\x1b\x1b\x1b\x1b")
     if start_idx == -1:
