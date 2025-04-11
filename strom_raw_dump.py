@@ -30,11 +30,11 @@ def find_telegram(buffer):
         return None, buffer
 
     end_idx = buffer.find(SML_END, start_idx + len(SML_START))
-    if end_idx == -1:
+    if end_idx == -1 or end_idx + len(SML_END) + 2 > len(buffer):
         return None, buffer
 
-    telegram = buffer[start_idx:end_idx + len(SML_END)]
-    remaining = buffer[end_idx + len(SML_END):]
+    telegram = buffer[start_idx:end_idx + len(SML_END) + 2]  # +2 für CRC
+    remaining = buffer[end_idx + len(SML_END) + 2:]
     return telegram, remaining
 
 
@@ -57,9 +57,9 @@ def dump_serial():
                             hex_data = telegram.hex()
                             length = len(telegram)
 
-                            # CRC prüfen (letzte 3 Bytes = CRC + 0x1a Padding)
-                            crc_data = telegram[:-3]  # alles bis vor CRC
-                            crc_expected = int.from_bytes(telegram[-3:-1], "big")
+                            # CRC prüfen (vorletzte 2 Bytes vor Endzeichen)
+                            crc_data = telegram[:-2]  # alles bis vor CRC
+                            crc_expected = int.from_bytes(telegram[-2:], "big")
                             crc_actual = crc16_sml(crc_data)
                             crc_ok = crc_actual == crc_expected
 
