@@ -33,8 +33,8 @@ while True:
         if start_idx != -1 and end_idx != -1 and len(buffer) >= end_idx + 6:
             try:
                 # SML-Daten + CRC-Bytes
-                sml_data = buffer[start_idx:end_idx + 4]
-                crc_raw = buffer[end_idx + 4:end_idx + 6]
+                sml_data = buffer[start_idx:end_idx + 5]
+                crc_raw = buffer[end_idx + 5:end_idx + 7]
                 crc_expected = int.from_bytes(crc_raw, byteorder="little")
                 crc_calculated = binascii.crc_hqx(sml_data, 0xFFFF)
 
