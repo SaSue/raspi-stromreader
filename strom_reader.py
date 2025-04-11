@@ -122,7 +122,7 @@ while True:
                 logging.debug("Bezugswert %s = %s", bezug_value.hex(), bezug_value_int)
                 
              
-             else:
+            else:
                 bezug_unit_string = "kein Bezug"
                 
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
