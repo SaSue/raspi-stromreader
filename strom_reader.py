@@ -100,9 +100,9 @@ while True:
             logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
             bezug_unit = sml_data[idx_bezug + idx_bezug_offset:idx_bezug + idx_bezug_offset + 2] 
             
-            if bezug_unit == b"\x62\x1e"
+            if bezug_unit == b"\x62\x1e":
                 bezug_unit_string = "kWh"
-            else
+            else:
                 bezug_unit_string = "unbekannte Einheit"
                 
             logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
