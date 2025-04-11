@@ -118,8 +118,8 @@ while True:
                 bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]   # 2 Byte raussuchen
                 if bezug_unit == b"\x62\x1e": # schauen ob Wh
                     logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), "Wh")
-                    bezug_unit_string = "kWh"
-                    bezug_kvalue_int = bezug_value_int / 1000
+                    bezug_unit_string = "kWh" # ich will aber kWh
+                    bezug_kvalue_int = bezug_value_int / 1000 # und den Wert rechnen wir um
                 else: # ansonten unbekannt
                     bezug_unit_string = "unbekannte Einheit"
                     logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
