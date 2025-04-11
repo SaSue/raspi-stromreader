@@ -37,21 +37,28 @@ while True:
 
             # Telegramm extrahieren (inkl. 1a)
             telegram = buffer[start_idx:]
-            end_idx = telegram.find(b"\x1b\x1b\x1b\x1a")
+            end_marker = b"\x1b\x1b\x1b\x1a"
+            end_idx = telegram.find(end_marker)
+           
             if end_idx == -1:
                 continue
-            crc_raw = telegram[end_idx+8:end_idx+12]
-            logging.info("🔢 CRC RAW: %s", crc_raw.hex())
-            end_idx += 4  # bis einschließlich \x1a
-            sml_data = telegram[:end_idx]
-           
+
+            crc_start = end_idx + len(end_marker)
+            crc_raw = telegram[crc_start:crc_start + 2]
+            if len(crc_raw) < 2:
+                continue  # incomplete CRC
+
             crc_expected = int.from_bytes(crc_raw, byteorder="little")
+            sml_data = telegram[:crc_start]
 
             crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
 
+
+  
             logging.info("")
             logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
             logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
+            logging.info("🔢 CRC RAW: %s", crc_raw.hex())
             logging.info("🔢 HEX: %s", sml_data.hex())
             logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
                          crc_expected,
