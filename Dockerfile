@@ -4,6 +4,6 @@ WORKDIR /app
 
 RUN pip install pyserial
 
-COPY strom_raw_dump.py /app/strom_raw_dump.py
+COPY strom_reader.py /app/strom_reader.py
 
-CMD ["python3", "/app/strom_raw_dump.py"]
+CMD ["python3", "/app/strom_reader.py"]
