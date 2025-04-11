@@ -8,11 +8,16 @@ import argparse
 from datetime import datetime
 import os
 
+import argparse
+import os
+import logging
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--debug", action="store_true", help="Aktiviere Debug-Ausgabe")
+args = parser.parse_args()
+
 debug_env = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes")
 debug_mode = args.debug or debug_env
-
-PORT = "/dev/ttyUSB0"
-BAUDRATE = 9600
 
 logging.basicConfig(
     level=logging.DEBUG if debug_mode else logging.INFO,
@@ -20,7 +25,12 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 
-logging.info("🔌 Verbinde mit %s @ %d Baud", PORT, BAUDRATE)
+PORT = "/dev/ttyUSB0"
+BAUDRATE = 9600
+
+
+
+logging.debug("🔌 Verbinde mit %s @ %d Baud", PORT, BAUDRATE)
 
 ser = serial.Serial(PORT, BAUDRATE, timeout=1)
 
@@ -49,13 +59,13 @@ while True:
 
       #  crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
         crc_calculated = crc_func(sml_data)
-        logging.info("")
-        logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
-        logging.info("🔢 HEX: %s", sml_komplett.hex())
-        logging.info("🔢 HEX: %s", sml_data.hex())
-        logging.info("🔢 CRC-Rohbytes: %s", crc_raw.hex())
-        logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
+        logging.debug("")
+        logging.debug("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
+        logging.debug("🔢 HEX: %s", sml_komplett.hex())
+        logging.debug("🔢 HEX: %s", sml_data.hex())
+        logging.debug("🔢 CRC-Rohbytes: %s", crc_raw.hex())
+        logging.debug("✅ CRC: erwartet %04X, berechnet %04X → %s",
                      crc_expected,
                      crc_calculated,
                      "✅ gültig" if crc_expected == crc_calculated else "❌ ungültig")
