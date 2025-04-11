@@ -12,9 +12,6 @@ import argparse
 import os
 import logging
 
-#offsets
-idx_bezug_offset = 19
-
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
 
@@ -98,15 +95,21 @@ while True:
             idx_bezug = 0
             idx_bezug = sml_data.find(bezug_kennung)           
             logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
-            bezug_unit = sml_data[idx_bezug + idx_bezug_offset:idx_bezug + idx_bezug_offset + 2] 
             
+            #Einheit raussuchen
+            idx_bezug_unit_offset = 19 # offset für die Einheit
+            bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]     
             if bezug_unit == b"\x62\x1e":
                 bezug_unit_string = "kWh"
             else:
                 bezug_unit_string = "unbekannte Einheit"
-                
             logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
-               
+            
+            #Scale Faktor raussuchen
+            idx_bezug_scale_offset = 21 # offset für die Einheit
+            bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 2]     
+            logging.debug("Faktor %s = %s", bezug_scale.hex(), bezug_scale_string)
+
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
             idx_einspeisung = 0
             einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
