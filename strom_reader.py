@@ -37,7 +37,7 @@ while True:
 
             # Telegramm extrahieren (inkl. 1a)
             telegram = buffer[start_idx:]
-            end_idx = telegram.find(b"\x1b\x1b\x1b\x1a")
+            end_idx = telegram.find(b"\x1b\x1b\x1b\x1a\x03")
             if end_idx == -1:
                 continue
             end_idx += 4  # bis einschließlich \x1a
