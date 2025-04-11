@@ -9,6 +9,6 @@ services:
     volumes:
       - ./logs:/app/logs
     environment:
-      - DEBUG=1
+      - DEBUG=0
     restart: unless-stopped
     tty: true

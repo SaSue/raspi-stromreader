@@ -28,8 +28,6 @@ logging.basicConfig(
 PORT = "/dev/ttyUSB0"
 BAUDRATE = 9600
 
-
-
 logging.debug("🔌 Verbinde mit %s @ %d Baud", PORT, BAUDRATE)
 
 ser = serial.Serial(PORT, BAUDRATE, timeout=1)
