@@ -86,7 +86,7 @@ while True:
             vendor_str = ""
             if idx_vendor > 1:
                 vendor_byte = sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4]
-                vendor_str = decode_manufacturer(vendor_byte.hex()))
+                vendor_str = decode_manufacturer(vendor_byte.hex())
             else:
                 vendor_str = "unbekannter Hersteller"
             logging.debug("Vendor %s als %s", vendor_byte.hex(), vendor_str)
