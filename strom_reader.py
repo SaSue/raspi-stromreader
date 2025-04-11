@@ -41,7 +41,7 @@ while True:
                 continue
 
             # Enthält: [START]...1b1b1b1b1a[FILLBYTE][CRC1][CRC2]
-            telegram_body = buffer[start_idx:end_idx + 2]  # inkl. 0x1a
+            telegram_body = buffer[start_idx:end_idx + 8 ]  # Endbyt, Fillbye CRCx2
             fill_byte = buffer[end_idx + 2:end_idx + 3]
             logging.info("🔢 HEX raw: %s", telegram_body.hex())
             crc_raw = buffer[end_idx + 3:end_idx + 5]
