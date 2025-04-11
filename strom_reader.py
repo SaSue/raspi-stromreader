@@ -270,7 +270,7 @@ while True:
                     timestamp = now.isoformat()
                     date_str = now.strftime("%Y-%m-%d")
     
-                output_data = { 
+                output_data = {
                     "leistung": wirk_value_int, 
                     "bezug": bezug_kvalue_int,
                     "einspeisung": einspeisung_kvalue_int,
