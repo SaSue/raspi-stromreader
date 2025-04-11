@@ -106,10 +106,9 @@ while True:
             logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
             
             #Scale Faktor raussuchen
-            idx_bezug_scale_offset = 21 # offset für die Einheit
-            bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 2]     
-            
-            bezug_scale_int = 0
+            idx_bezug_scale_offset = 22 # offset für die Einheit
+            bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 1]     
+            bezug_scale_int = int.from_bytes(bezug_scale, byteorder="big", signed=True)
             logging.debug("Faktor %s = %s", bezug_scale.hex(), bezug_scale_int)
 
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
