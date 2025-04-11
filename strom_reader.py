@@ -34,7 +34,7 @@ while True:
             try:
                 # SML-Daten + CRC-Bytes
                 sml_complete = buffer[start_idx:end_idx + 7]
-                logging.debug("🔢 HEX komplett: %s", sml_complete.hex())
+                logging.DEBUG("🔢 HEX komplett: %s", sml_complete.hex())
                 sml_data = buffer[start_idx:end_idx + 5]
                 crc_raw = buffer[end_idx + 5:end_idx + 7]
                 crc_expected = int.from_bytes(crc_raw, byteorder="little")
