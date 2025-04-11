@@ -27,39 +27,32 @@ while True:
         continue
     buffer += raw
 
-    # Prüfe, ob wir das Ende eines SML-Telegramms sehen
-    if buffer.endswith(b"\x1b\x1b\x1b\x1a") and len(buffer) > 8:
+    # Suche nach Start- und Endsequenz
+    start_marker = b"\x1b\x1b\x1b\x1b"
+    end_marker = b"\x1b\x1b\x1b\x1a"
+
+    start_idx = buffer.find(start_marker)
+    end_idx = buffer.find(end_marker)
+
+    if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
         try:
-            start_idx = buffer.find(b"\x1b\x1b\x1b\x1b")
-            if start_idx == -1:
-                buffer = b""
-                continue
-
-            # Telegramm extrahieren (inkl. 1a)
-            telegram = buffer[start_idx:]
-            end_marker = b"\x1b\x1b\x1b\x1a"
-            end_idx = telegram.find(end_marker)
-           
-            if end_idx == -1:
-                continue
-
+            # Position nach end_marker
             crc_start = end_idx + len(end_marker)
+            if crc_start + 2 > len(buffer):
+                continue  # warte auf CRC-Bytes
+
+            telegram = buffer[start_idx:crc_start + 2]
+            sml_data = telegram[:crc_start]
             crc_raw = telegram[crc_start:crc_start + 2]
-            if len(crc_raw) < 2:
-                continue  # incomplete CRC
 
             crc_expected = int.from_bytes(crc_raw, byteorder="little")
-            sml_data = telegram[:crc_start]
-
             crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
 
-
-  
             logging.info("")
             logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
+            logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(telegram))
             logging.info("🔢 CRC RAW: %s", crc_raw.hex())
-            logging.info("🔢 HEX: %s", sml_data.hex())
+            logging.info("🔢 HEX: %s", telegram.hex())
             logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
                          crc_expected,
                          crc_calculated,
