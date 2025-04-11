@@ -88,17 +88,14 @@ while True:
             idx_sn = sml_data.find(sn_kennung)
             
             logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
-            
-            
+              
             # Bezug gesamt suchen
             logging.debug(" ")
             logging.debug("*** Bezug ****")
             idx_bezug = 0
             idx_bezug = sml_data.find(bezug_kennung)           
             logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
-            
-
-            
+        
             if idx_bezug > 0:
             
                 #Scale Faktor raussuchen
@@ -131,11 +128,46 @@ while True:
                 bezug_unit_string = "kein Bezug"
                 
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
+            logging.debug(" ")
+            logging.debug("*** Einspeisung ****")
             idx_einspeisung = 0
             einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
             idx_einspeisung = sml_data.find(einspeisung_kennung)
             
             logging.debug("Einspeisung %s an Stelle %s",einspeisung_kennung.hex(), idx_einspeisung)
+
+            if idx_einspeisung > 0:
+                
+                #Scale Faktor raussuchen
+                idx_einspeisung_scale_offset = 22 # offset für die Einheit
+                einspeisung_scale = sml_data[idx_einspeisung + idx_einspeisung_scale_offset:idx_einspeisung + idx_einspeisung_scale_offset + 1]     # 1 Byte für den Scale raussuchen
+                einspeisung_scale_int = pow(10, int.from_bytes(einspeisung_scale, byteorder="big", signed=True)) # potenz den scale errechnen
+                logging.debug("Faktor %s = %s", einspeisung_scale.hex(), einspeisung_scale_int)
+                
+                # Bezug errechnen
+                idx_einspeisung_value_offset = 24 # offset für den wer
+                einspeisung_value = sml_data[idx_einspeisung + idx_einspeisung_value_offset:idx_einspeisung + idx_einspeisung_value_offset + 8]     # 9 Byte für den Wert
+                einspeisung_value_int = int(einspeisung_value.hex(), 16) * einspeisung_scale_int # potenz den scale errechnen
+                logging.debug("Bezugswert %s = %s", einspeisung_value.hex(), einspeisung_value_int)
+                
+                #Einheit raussuchen
+                idx_einspeisung_unit_offset = 19 # offset für die Einheit
+                einspeisung_unit = sml_data[idx_einspeisung + idx_einspeisung_unit_offset:idx_einspeisung + idx_einspeisung_unit_offset + 2]   # 2 Byte raussuchen
+                if einspeisung_unit == b"\x62\x1e": # schauen ob Wh
+                    logging.debug("Einspesieinheit %s = %s", einspeisung_unit.hex(), "Wh")
+                    einspeisung_unit_string = "kWh" # ich will aber kWh
+                    einspeisung_kvalue_int = einspeisung_value_int / 1000 # und den Wert rechnen wir um
+                else: # ansonten unbekannt
+                    einspeisung_unit_string = "unbekannte Einheit"
+                    logging.debug("Einspeiseinheit %s = %s", einspeisung_unit.hex(), einspeisung_unit_string)
+                    einspeisung_kvalue_int = einspeisung_value_int 
+                
+                logging.debug("Die Einspeisung beträgt %s %s",einspeisung_kvalue_int, einspeisung_unit_string)
+
+
+
+
+
 
             # Wirkleistung gesamt suchen 07 01 00 10 07 00 ff
             idx_wirk = 0
