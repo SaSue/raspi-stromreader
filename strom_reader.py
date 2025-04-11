@@ -136,7 +136,7 @@ while True:
             idx_sn = 0
             sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
             idx_sn = sml_data.find(sn_kennung)
-            ogging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
+            logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
             idx_sn_offset = 11
             
             if idx_sn > 1:
