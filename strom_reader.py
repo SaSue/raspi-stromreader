@@ -11,11 +11,6 @@ import json
 import logging
 from pathlib import Path
 
-print(f"args.debug: {args.debug}")
-print(f"os.getenv('DEBUG'): {os.getenv('DEBUG')}")
-print(f"debug_env: {debug_env}")
-print(f"debug_mode: {debug_mode}")
-
 # Speicherpfade
 OUTPUT_PATH = Path("/app/data")
 HISTORY_PATH = OUTPUT_PATH / "history"
@@ -72,6 +67,11 @@ sml_ende = b"\x1b\x1b\x1b\x1a"
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", help="Aktiviere Debug-Ausgabe")
 args = parser.parse_args()
+
+print(f"args.debug: {args.debug}")
+print(f"os.getenv('DEBUG'): {os.getenv('DEBUG')}")
+print(f"debug_env: {debug_env}")
+print(f"debug_mode: {debug_mode}")
 
 debug_env = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes")
 debug_mode = args.debug or debug_env
