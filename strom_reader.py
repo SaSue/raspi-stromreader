@@ -85,7 +85,7 @@ while True:
             idx_vendor_offset = 11
             vendor_str = ""
             if idx_vendor > 1:
-                vendor_byte = sml_data[idx_vendor + idx_vendor_offset:idx_bezug + idx_vendor_offset + 4]
+                vendor_byte = sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4]
                 vendor_str = vendor_byte.str()
             else:
                 vendor_str = "unbekannter Hersteller"
