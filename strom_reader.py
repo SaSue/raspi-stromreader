@@ -117,7 +117,7 @@ while True:
                 
                 # Bezug errechnen
                 idx_bezug_value_offset = 23 # offset für den wer
-                bezug_value = sml_data[idx_bezug + idx_bezug_value_offset:idx_bezug + idx_bezug_value_offset + 9]     # 9 Byte für den Wert
+                bezug_value = sml_data[idx_bezug + idx_bezug_value_offset:idx_bezug + idx_bezug_value_offset + 7]     # 9 Byte für den Wert
                 bezug_value_int = int.from_bytes(bezug_value, byteorder="big", signed=True) * bezug_scale_int # potenz den scale errechnen
                 logging.debug("Bezugswert %s = %s", bezug_value.hex(), bezug_value_int)
                 
