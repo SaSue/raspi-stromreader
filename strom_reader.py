@@ -12,6 +12,42 @@ import argparse
 import os
 import logging
 
+def decode_manufacturer(hex_string):
+    """
+    Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
+    Ignoriert das erste Byte (Längen-/Typkennzeichen).
+    """
+    # Sicherstellen, dass der String eine gerade Anzahl von Zeichen hat
+    hex_string = hex_string.strip().lower()
+    if len(hex_string) < 8:
+        raise ValueError("Ungültiger Hersteller-Code: zu kurz")
+
+    # Die letzten 3 Bytes (6 Zeichen) nehmen
+    ascii_part = hex_string[-6:]
+    try:
+        readable = bytes.fromhex(ascii_part).decode("ascii")
+        return readable
+    except Exception as e:
+        return f"Fehler beim Decodieren: {e}"
+
+def parse_device_id(hex_string):
+    """
+    Extrahiert die Gerätekennung aus einem vollständigen Hex-String.
+    Erwartet mindestens 10 Bytes nach dem TL-Feld (z. B. '0b0a01454d480000b8ef79').
+    """
+    try:
+        # Nimmt nur den tatsächlichen Inhalt ohne das TL-Feld (z. B. nach '0b0a01')
+        payload = hex_string[6:]  # ab Index 6 → 454d480000b8ef79
+        ascii_part = payload[:6]  # 454d48
+        serial_part = payload[6:] # 0000b8ef79
+
+        hersteller = bytes.fromhex(ascii_part).decode("ascii")
+        seriennummer = serial_part.upper()
+
+        return f"{hersteller}-{seriennummer}"
+    except Exception as e:
+        return f"Fehler beim Parsen: {e}"
+        
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
 einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
@@ -233,40 +269,3 @@ while True:
         # Buffer bereinigen
         buffer = buffer[idx + 7:]
         
-        
-        
-def decode_manufacturer(hex_string):
-    """
-    Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
-    Ignoriert das erste Byte (Längen-/Typkennzeichen).
-    """
-    # Sicherstellen, dass der String eine gerade Anzahl von Zeichen hat
-    hex_string = hex_string.strip().lower()
-    if len(hex_string) < 8:
-        raise ValueError("Ungültiger Hersteller-Code: zu kurz")
-
-    # Die letzten 3 Bytes (6 Zeichen) nehmen
-    ascii_part = hex_string[-6:]
-    try:
-        readable = bytes.fromhex(ascii_part).decode("ascii")
-        return readable
-    except Exception as e:
-        return f"Fehler beim Decodieren: {e}"
-
-def parse_device_id(hex_string):
-    """
-    Extrahiert die Gerätekennung aus einem vollständigen Hex-String.
-    Erwartet mindestens 10 Bytes nach dem TL-Feld (z. B. '0b0a01454d480000b8ef79').
-    """
-    try:
-        # Nimmt nur den tatsächlichen Inhalt ohne das TL-Feld (z. B. nach '0b0a01')
-        payload = hex_string[6:]  # ab Index 6 → 454d480000b8ef79
-        ascii_part = payload[:6]  # 454d48
-        serial_part = payload[6:] # 0000b8ef79
-
-        hersteller = bytes.fromhex(ascii_part).decode("ascii")
-        seriennummer = serial_part.upper()
-
-        return f"{hersteller}-{seriennummer}"
-    except Exception as e:
-        return f"Fehler beim Parsen: {e}"
