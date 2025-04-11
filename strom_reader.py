@@ -11,7 +11,7 @@ BAUDRATE = 9600
 
 # Logging konfigurieren
 logging.basicConfig(
-    level=logging.DEBUG,
+    level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
@@ -34,7 +34,7 @@ while True:
             try:
                 # SML-Daten + CRC-Bytes
                 sml_complete = buffer[start_idx:end_idx + 7]
-                logging.DEBUG("🔢 HEX komplett: %s", sml_complete.hex())
+                logging.info("🔢 HEX komplett: %s", sml_complete.hex())
                 sml_data = buffer[start_idx:end_idx + 5]
                 crc_raw = buffer[end_idx + 5:end_idx + 7]
                 crc_expected = int.from_bytes(crc_raw, byteorder="little")
