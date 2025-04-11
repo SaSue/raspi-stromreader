@@ -11,6 +11,11 @@ import json
 import logging
 from pathlib import Path
 
+print(f"args.debug: {args.debug}")
+print(f"os.getenv('DEBUG'): {os.getenv('DEBUG')}")
+print(f"debug_env: {debug_env}")
+print(f"debug_mode: {debug_mode}")
+
 # Speicherpfade
 OUTPUT_PATH = Path("/app/data")
 HISTORY_PATH = OUTPUT_PATH / "history"
