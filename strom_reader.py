@@ -68,11 +68,6 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", help="Aktiviere Debug-Ausgabe")
 args = parser.parse_args()
 
-print(f"args.debug: {args.debug}")
-print(f"os.getenv('DEBUG'): {os.getenv('DEBUG')}")
-print(f"debug_env: {debug_env}")
-print(f"debug_mode: {debug_mode}")
-
 debug_env = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes")
 debug_mode = args.debug or debug_env
 
@@ -81,6 +76,10 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
+print(f"args.debug: {args.debug}")
+print(f"os.getenv('DEBUG'): {os.getenv('DEBUG')}")
+print(f"debug_env: {debug_env}")
+print(f"debug_mode: {debug_mode}")
 
 PORT = "/dev/ttyUSB0"
 BAUDRATE = 9600
