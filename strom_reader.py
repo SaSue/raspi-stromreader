@@ -34,7 +34,7 @@ while True:
         # Lies genau 3 weitere Bytes (CRC + Füllbyte)
         while len(buffer) < idx + 4 + 3:
             buffer += ser.read(1)
-
+        sml_komplett = buffer[:idx + 7] 
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
         crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
         crc_expected = int.from_bytes(crc_raw, "little")
@@ -44,6 +44,7 @@ while True:
         logging.info("")
         logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
+        logging.info("🔢 HEX: %s", sml_komplett.hex())
         logging.info("🔢 HEX: %s", sml_data.hex())
         logging.info("🔢 CRC-Rohbytes: %s", crc_raw.hex())
         logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
