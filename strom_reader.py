@@ -1,94 +1,61 @@
+#!/usr/bin/env python3
 import serial
+import time
 import logging
+import binascii
 from datetime import datetime
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(levelname)s] %(message)s')
-logger = logging.getLogger("strom-dump")
+# Konfiguration
+PORT = "/dev/ttyUSB0"
+BAUDRATE = 9600
 
-START_SEQUENCE = b'\x1b\x1b\x1b\x1b'
-END_SEQUENCE = b'\x1b\x1b\x1b\x1b\x1a'
+# Logging konfigurieren
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
+logging.info("🔌 Verbinde mit %s @ %d Baud", PORT, BAUDRATE)
 
-def crc16_sml(data):
-    crc = 0xFFFF
-    for byte in data:
-        crc ^= byte << 8
-        for _ in range(8):
-            if crc & 0x8000:
-                crc = (crc << 1) ^ 0x1021
-            else:
-                crc <<= 1
-            crc &= 0xFFFF
-    return crc
+ser = serial.Serial(PORT, BAUDRATE, timeout=1)
 
+buffer = b""
+while True:
+    raw = ser.read(1)
+    if not raw:
+        continue
+    buffer += raw
 
-def find_sml_blocks(buffer):
-    blocks = []
-    start = 0
-    while True:
-        start_index = buffer.find(START_SEQUENCE, start)
-        if start_index == -1:
-            break
-        end_index = buffer.find(END_SEQUENCE, start_index + 4)
-        if end_index == -1 or end_index + 5 > len(buffer):
-            break
-        block = buffer[start_index:end_index + 5]  # including END_SEQUENCE + padding + CRC
-        blocks.append(block)
-        start = end_index + 5
-    return blocks
-
-
-def decode_sml_block(block):
-    if not block.startswith(START_SEQUENCE) or END_SEQUENCE not in block:
-        return None, None, None
-
-    try:
-        end_index = block.index(END_SEQUENCE) + len(END_SEQUENCE)
-        if end_index + 2 > len(block):
-            return None, None, None
-
-        crc_received = block[end_index:end_index + 2]
-        data_for_crc = block[:end_index]
-        calculated_crc = crc16_sml(data_for_crc).to_bytes(2, 'big')
-
-        return block, calculated_crc, crc_received
-    except Exception as e:
-        logger.warning(f"Fehler bei der CRC-Berechnung: {e}")
-        return None, None, None
-
-
-def main():
-    with serial.Serial("/dev/ttyUSB0", 9600, timeout=5) as ser:
-        buffer = bytearray()
-        while True:
-            data = ser.read(512)
-            if not data:
+    # Prüfe, ob wir das Ende eines SML-Telegramms sehen
+    if buffer.endswith(b"\x1b\x1b\x1b\x1a") and len(buffer) > 8:
+        try:
+            start_idx = buffer.find(b"\x1b\x1b\x1b\x1b")
+            if start_idx == -1:
+                buffer = b""
                 continue
-            buffer.extend(data)
-            blocks = find_sml_blocks(buffer)
 
-            for block in blocks:
-                logger.info("\n")
-                logger.info("[%s]", datetime.now().isoformat(timespec='seconds'))
-                logger.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(block))
-                logger.info("🔢 HEX: %s", block.hex())
+            # Telegramm extrahieren (inkl. 1a)
+            telegram = buffer[start_idx:]
+            end_idx = telegram.find(b"\x1b\x1b\x1b\x1a")
+            if end_idx == -1:
+                continue
+            end_idx += 4  # bis einschließlich \x1a
+            sml_data = telegram[:end_idx]
+            crc_raw = telegram[end_idx:end_idx + 2]
+            crc_expected = int.from_bytes(crc_raw, byteorder="little")
 
-                decoded_block, calculated_crc, received_crc = decode_sml_block(block)
-                if decoded_block is None:
-                    logger.warning("⚠️ Fehler beim Verarbeiten des Telegramms.")
-                    continue
+            crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
 
-                expected = received_crc.hex().upper()
-                calculated = calculated_crc.hex().upper()
-                status = "✅ CRC: erwartet %s, berechnet %s → %s" % (
-                    expected,
-                    calculated,
-                    "✔ gültig" if expected == calculated else "❌ ungültig"
-                )
-                logger.info(status)
-
-            buffer.clear()
-
-
-if __name__ == "__main__":
-    main()
+            logging.info("")
+            logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
+            logging.info("🔢 HEX: %s", sml_data.hex())
+            logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
+                         crc_expected,
+                         crc_calculated,
+                         "✅ gültig" if crc_expected == crc_calculated else "❌ ungültig")
+        except Exception as e:
+            logging.error("❌ Fehler beim Verarbeiten: %s", e)
+        finally:
+            buffer = b""
