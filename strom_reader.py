@@ -125,7 +125,7 @@ while True:
                     logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
                     bezug_kvalue_int = bezug_value_int 
                 
-                logging.debug("Der Bezug beträgt ",bezug_kvalue_int, bezug_unit_string)
+                logging.debug("Der Bezug beträgt %s %s",bezug_kvalue_int, bezug_unit_string)
              
             else:
                 bezug_unit_string = "kein Bezug"
