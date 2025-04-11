@@ -99,8 +99,14 @@ while True:
             idx_bezug = sml_data.find(bezug_kennung)           
             logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
             bezug_unit = sml_data[idx_bezug + idx_bezug_offset:idx_bezug + idx_bezug_offset + 2] 
-            logging.debug("Bezugeinheit %s", bezug_unit.hex())
             
+            if bezug_unit == b"\x62\x1e"
+                bezug_unit_string = "kWh"
+            else
+                bezug_unit_string = "unbekannte Einheit"
+                
+            logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
+               
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
             idx_einspeisung = 0
             einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
