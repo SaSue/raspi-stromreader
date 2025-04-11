@@ -1,0 +1,12 @@
+version: '3.8'
+
+services:
+  strom-raw-dump:
+    build: .
+    container_name: strom-raw-dump
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    tty: true
