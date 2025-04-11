@@ -186,7 +186,7 @@ while True:
                 
                 # Wirk errechnen
                 idx_wirk_value_offset = 21 # offset für den wert
-                wirk_value = sml_data[idx_wirk + idx_wirk_value_offset:idx_wirk + idx_wirk_value_offset + 5]     # 9 Byte für den Wert
+                wirk_value = sml_data[idx_wirk + idx_wirk_value_offset:idx_wirk + idx_wirk_value_offset + 4]     # 9 Byte für den Wert
                 wirk_value_int = int(wirk_value.hex(), 16) * wirk_scale_int # potenz den scale errechnen
                 logging.debug("Wirkwert %s = %s", wirk_value.hex(), wirk_value_int)
                 
