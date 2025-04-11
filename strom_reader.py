@@ -12,6 +12,15 @@ import argparse
 import os
 import logging
 
+#offsets
+idx_bezug_offset = 19
+
+#obis kennungen
+bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
+
+#sml kennzeichen
+sml_ende = b"\x1b\x1b\x1b\x1a"
+
 parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", help="Aktiviere Debug-Ausgabe")
 args = parser.parse_args()
@@ -40,8 +49,8 @@ while True:
     buffer += raw
 
     # Suche nach Endezeichen
-    if b"\x1b\x1b\x1b\x1a" in buffer:
-        idx = buffer.find(b"\x1b\x1b\x1b\x1a")
+    if sml_ende in buffer:
+        idx = buffer.find(sml_ende)
         if idx == -1 or len(buffer) < idx + 4 + 3:
             continue  # noch nicht vollständig
 
@@ -85,12 +94,10 @@ while True:
             
             # Bezug gesamt suchen
             idx_bezug = 0
-            bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
-            idx_bezug = sml_data.find(bezug_kennung)
-            idx_bezug_offset = 19
+            idx_bezug = sml_data.find(bezug_kennung)           
+            logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
             bezug_unit = sml_data[idx_bezug + idx_bezug_offset:idx_bezug + idx_bezug_offset + 2] 
             logging.debug("Bezugeinheit %s", bezug_unit.hex())
-            logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
             
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
             idx_einspeisung = 0
