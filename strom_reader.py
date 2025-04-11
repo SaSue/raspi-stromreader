@@ -17,50 +17,43 @@ logging.basicConfig(
 )
 
 logging.info("🔌 Verbinde mit %s @ %d Baud", PORT, BAUDRATE)
-
 ser = serial.Serial(PORT, BAUDRATE, timeout=1)
 
 buffer = b""
 while True:
     raw = ser.read(1)
-    if not raw:
-        continue
-    buffer += raw
+    if raw:
+        buffer += raw
 
-    # Prüfe auf Endezeichen
-    if buffer.endswith(b"\x1b\x1b\x1b\x1a") and len(buffer) > 100:
-        try:
-            start_idx = buffer.find(b"\x1b\x1b\x1b\x1b")
-            end_marker = b"\x1b\x1b\x1b\x1a"
+        # Suche nach Start und Ende
+        start_idx = buffer.find(b"\x1b\x1b\x1b\x1b")
+        end_idx = buffer.find(b"\x1b\x1b\x1b\x1a", start_idx)
 
-            if start_idx == -1:
-                buffer = b""
-                continue
+        # Telegramm gefunden?
+        if start_idx != -1 and end_idx != -1 and len(buffer) >= end_idx + 6:
+            try:
+                # SML-Daten + CRC-Bytes
+                sml_data = buffer[start_idx:end_idx + 4]
+                crc_raw = buffer[end_idx + 4:end_idx + 6]
+                crc_expected = int.from_bytes(crc_raw, byteorder="little")
+                crc_calculated = binascii.crc_hqx(sml_data, 0xFFFF)
 
-            telegram = buffer[start_idx:]
-            end_idx = telegram.find(end_marker)
+                logging.info("")
+                logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+                logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
+                logging.info("🔢 CRC-Rohbytes: %s", crc_raw.hex())
+                logging.info("🔢 HEX: %s", sml_data.hex())
+                logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
+                             crc_expected,
+                             crc_calculated,
+                             "✅ gültig" if crc_expected == crc_calculated else "❌ ungültig")
 
-            if end_idx == -1 or len(telegram) < end_idx + 6:
-                continue
+            except Exception as e:
+                logging.error("❌ Fehler beim Verarbeiten: %s", e)
 
-            # SML ohne CRC (bis einschließlich 1a)
-            sml_data = telegram[:end_idx + len(end_marker)]
+            # Buffer nach Telegramm bereinigen
+            buffer = buffer[end_idx + 6:]
 
-            # CRC liegt direkt NACH der 1a, 2 Bytes
-            crc_raw = telegram[end_idx + len(end_marker): end_idx + len(end_marker) + 2]
-            crc_expected = int.from_bytes(crc_raw, byteorder="little")
-            crc_calculated = binascii.crc_hqx(sml_data, 0xFFFF)
-
-            logging.info("")
-            logging.info("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-            logging.info("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
-            logging.info("🔢 CRC-Rohbytes: %s", crc_raw.hex())
-            logging.info("🔢 HEX: %s", sml_data.hex())
-            logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
-                         crc_expected,
-                         crc_calculated,
-                         "✅ gültig" if crc_expected == crc_calculated else "❌ ungültig")
-        except Exception as e:
-            logging.error("❌ Fehler beim Verarbeiten: %s", e)
-        finally:
-            buffer = b""
+    # Optional: Puffergröße begrenzen (gegen Buffer Overflow bei fehlerhaftem Stream)
+    if len(buffer) > 2000:
+        buffer = buffer[-1000:]
