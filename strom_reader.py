@@ -47,7 +47,7 @@ while True:
                 logging.info("🔢 HEX: %s", sml_data.hex())
                 logging.info("✅ CRC: erwartet %04X, berechnet %04X → %s",
                              crc_expected,
-                             crc_calculated,
+                             crc_calculated.hex,
                              "✅ gültig" if crc_expected == crc_calculated else "❌ ungültig")
 
             except Exception as e:
