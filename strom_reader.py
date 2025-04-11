@@ -99,7 +99,7 @@ while True:
             if idx_bezug > 0:
             
                 #Scale Faktor raussuchen
-                idx_bezug_scale_offset = 22 # offset für die Einheit
+                idx_bezug_scale_offset = 22 # offset für die Skala
                 bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 1]     # 1 Byte für den Scale raussuchen
                 bezug_scale_int = pow(10, int.from_bytes(bezug_scale, byteorder="big", signed=True)) # potenz den scale errechnen
                 logging.debug("Faktor %s = %s", bezug_scale.hex(), bezug_scale_int)
@@ -139,19 +139,19 @@ while True:
             if idx_einspeisung > 0:
                 
                 #Scale Faktor raussuchen
-                idx_einspeisung_scale_offset = 22 # offset für die Einheit
+                idx_einspeisung_scale_offset = 19 # offset für die Skala
                 einspeisung_scale = sml_data[idx_einspeisung + idx_einspeisung_scale_offset:idx_einspeisung + idx_einspeisung_scale_offset + 1]     # 1 Byte für den Scale raussuchen
                 einspeisung_scale_int = pow(10, int.from_bytes(einspeisung_scale, byteorder="big", signed=True)) # potenz den scale errechnen
                 logging.debug("Faktor %s = %s", einspeisung_scale.hex(), einspeisung_scale_int)
                 
                 # Bezug errechnen
-                idx_einspeisung_value_offset = 24 # offset für den wer
+                idx_einspeisung_value_offset = 21 # offset für den wer
                 einspeisung_value = sml_data[idx_einspeisung + idx_einspeisung_value_offset:idx_einspeisung + idx_einspeisung_value_offset + 8]     # 9 Byte für den Wert
                 einspeisung_value_int = int(einspeisung_value.hex(), 16) * einspeisung_scale_int # potenz den scale errechnen
                 logging.debug("Bezugswert %s = %s", einspeisung_value.hex(), einspeisung_value_int)
                 
                 #Einheit raussuchen
-                idx_einspeisung_unit_offset = 19 # offset für die Einheit
+                idx_einspeisung_unit_offset = 16 # offset für die Einheit
                 einspeisung_unit = sml_data[idx_einspeisung + idx_einspeisung_unit_offset:idx_einspeisung + idx_einspeisung_unit_offset + 2]   # 2 Byte raussuchen
                 if einspeisung_unit == b"\x62\x1e": # schauen ob Wh
                     logging.debug("Einspesieinheit %s = %s", einspeisung_unit.hex(), "Wh")
