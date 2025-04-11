@@ -35,9 +35,9 @@ while True:
         # Lies genau 3 weitere Bytes (CRC + Füllbyte)
         while len(buffer) < idx + 4 + 3:
             buffer += ser.read(1)
-        sml_komplett = buffer[:idx + 7] 
-        sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
-        crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
+        sml_komplett = buffer[:idx + 8] 
+        sml_data = buffer[:idx + 6]         # inkl. 1a + Füllbyte (1 Byte)
+        crc_raw = buffer[idx + 6:idx + 8]   # 2 CRC-Bytes
         crc_expected = int.from_bytes(crc_raw, "little")
 
         crc_func = crcmod.mkCrcFun(0x11021, initCrc=0xFFFF, xorOut=0xFFFF, rev=True)
