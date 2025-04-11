@@ -10,6 +10,7 @@ import os
 import json
 import logging
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 # Speicherpfade
 OUTPUT_PATH = Path("/app/data")
@@ -270,7 +271,7 @@ while True:
                 
             current_time = time.time()
             if current_time - last_json_write >= wait_time:
-                now = datetime.now()
+                now = datetime.now(ZoneInfo("Europe/Berlin"))
                 timestamp = now.isoformat()
                 date_str = now.strftime("%Y-%m-%d")
     
