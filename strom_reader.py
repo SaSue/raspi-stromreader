@@ -150,13 +150,13 @@ while True:
                 idx_einspeisung_value_offset = 21 # offset für den wer
                 einspeisung_value = sml_data[idx_einspeisung + idx_einspeisung_value_offset:idx_einspeisung + idx_einspeisung_value_offset + 8]     # 9 Byte für den Wert
                 einspeisung_value_int = int(einspeisung_value.hex(), 16) * einspeisung_scale_int # potenz den scale errechnen
-                logging.debug("Bezugswert %s = %s", einspeisung_value.hex(), einspeisung_value_int)
+                logging.debug("Einspeisewert %s = %s", einspeisung_value.hex(), einspeisung_value_int)
                 
                 #Einheit raussuchen
                 idx_einspeisung_unit_offset = 16 # offset für die Einheit
                 einspeisung_unit = sml_data[idx_einspeisung + idx_einspeisung_unit_offset:idx_einspeisung + idx_einspeisung_unit_offset + 2]   # 2 Byte raussuchen
                 if einspeisung_unit == b"\x62\x1e": # schauen ob Wh
-                    logging.debug("Einspesieinheit %s = %s", einspeisung_unit.hex(), "Wh")
+                    logging.debug("Einspeiseeinheit %s = %s", einspeisung_unit.hex(), "Wh")
                     einspeisung_unit_string = "kWh" # ich will aber kWh
                     einspeisung_kvalue_int = einspeisung_value_int / 1000 # und den Wert rechnen wir um
                 else: # ansonten unbekannt
@@ -198,6 +198,8 @@ while True:
                 else: # ansonten unbekannt
                     wirk_unit_string = "unbekannte Einheit"
                 logging.debug("Wirkeinheit %s = %s", wirk_unit.hex(), wirk_unit_string )
+                
+                logging.debug("Die aktuelle Wirkleistung beträgt %s %s",wirk_value_int, wirk_unit_string)
             
     
                      
