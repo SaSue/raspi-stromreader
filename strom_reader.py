@@ -81,29 +81,28 @@ while True:
             sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
             idx_sn = sml_data.find(sn_kennung)
             
-            logging.debug("SN an Stelle %s", idx_sn)
+            logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
             
             # Bezug gesamt suchen
             idx_bezug = 0
             bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
             idx_bezug = sml_data.find(bezug_kennung)
             
-            logging.debug("Bezug an Stelle %s", idx_bezug)
+            logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
             
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
             idx_einspeisung = 0
             einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
             idx_einspeisung = sml_data.find(einspeisung_kennung)
             
-            logging.debug("Einspeisung an Stelle %s", idx_einspeisung)
+            logging.debug("Einspeisung %s an Stelle %s",einspeisung_kennung.hex(), idx_einspeisung)
 
             # Wirkleistung gesamt suchen 07 01 00 10 07 00 ff
             idx_wirk = 0
             wirk_kennung = b"\x07\x01\x00\x10\x07\x00\xff"
             idx_wirk = sml_data.find(wirk_kennung)
             
-            logging.debug("Wirkleistung an Stelle %s", idx_wirk)   
-            
+            logging.debug("Wirkleistung %s an Stelle %s", wirk_kennung.hex(), idx_wirk)   
             
                      
         else: 
