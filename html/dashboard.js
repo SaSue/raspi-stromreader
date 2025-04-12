@@ -119,6 +119,7 @@ function renderVerlauf(daten) {
 
 const updateElem = document.getElementById('last-update-text');
 const snElem = document.getElementById('seriennummer-text');
+const liveBadge = document.getElementById('live-badge');
 
 fetch('/strom.json')
   .then(res => res.json())
@@ -131,6 +132,16 @@ fetch('/strom.json')
         timeStyle: 'medium'
       });
       updateElem.textContent = `Letzte Aktualisierung: ${formatted}`;
+      
+      
+  // Live-Badge nur wenn innerhalb 5 Minuten
+  const jetzt = new Date();
+  const diffMinuten = (jetzt - time) / 60000;
+  if (diffMinuten < 5) {
+    liveBadge.classList.remove("hidden");
+  } else {
+    liveBadge.classList.add("hidden");
+  }
     } else {
       updateElem.textContent = 'Letzte Aktualisierung: unbekannt';
     }
