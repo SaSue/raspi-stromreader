@@ -117,13 +117,16 @@ function renderVerlauf(daten) {
   });
 })();
 
+const updateElem = document.getElementById('last-update-text');
+const snElem = document.getElementById('seriennummer-text');
+
 fetch('/strom.json')
   .then(res => res.json())
   .then(data => {
-    const updateElem = document.getElementById('last-update-text');
     if (data.timestamp) {
       const time = new Date(data.timestamp);
-      const formatted = time.toLocaleString(undefined, {
+      const formatted = time.toLocaleString("de-DE", {
+        timeZone: "Europe/Berlin",
         dateStyle: 'short',
         timeStyle: 'medium'
       });
@@ -131,12 +134,14 @@ fetch('/strom.json')
     } else {
       updateElem.textContent = 'Letzte Aktualisierung: unbekannt';
     }
+
     if (data.seriennummer) {
-        snElem.textContent = `Seriennummer: ${data.seriennummer}`;
+      snElem.textContent = `Seriennummer: ${data.seriennummer}`;
     } else {
-        snElem.textContent = 'Seriennummer: unbekannt';
-    }    
+      snElem.textContent = 'Seriennummer: unbekannt';
+    }
   })
   .catch(() => {
-    document.getElementById('last-update-text').textContent = 'Letzte Aktualisierung: Fehler beim Laden';
+    updateElem.textContent = 'Letzte Aktualisierung: Fehler beim Laden';
+    snElem.textContent = 'Seriennummer: Fehler beim Laden';
   });
