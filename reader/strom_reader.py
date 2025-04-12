@@ -85,7 +85,7 @@ def crc_check(crc_raw,sml_telegram):
         return False
         
 def suchen(sml_telegram,idx_position,idx_offset,idx_len):
-    return sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len]).hex()
+    return sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len].hex()
                             
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
