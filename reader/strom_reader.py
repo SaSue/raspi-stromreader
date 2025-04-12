@@ -71,8 +71,10 @@ def parse_device_id(hex_string):
 def crc_check(crc_raw,sml_telegram):
     crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
     if crc_func(sml_telegram) == int.from_bytes(crc_raw, "little"):
+        logging.debug("CRC Prüfung erfolgreich")
         return True
     else:
+        logging.debug("CRC Prüfung fehlgeschlagen")
     	return False
 
 
@@ -131,24 +133,17 @@ while True:
         # sml_komplett = buffer[:idx + 7] 
         logging.debug("🔢 komplettes Telegram: %s", buffer[:idx + 7].hex())
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
-        crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
-        crc_expected = int.from_bytes(crc_raw, "little")
-        logging.debug("❗️❗️❗️ %s", crc_check(buffer[idx + 5:idx + 7],sml_data))
+        # crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
+        # crc_expected = int.from_bytes(crc_raw, "little")
         
-        crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
+        # crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
 
-      #  crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
-        crc_calculated = crc_func(sml_data)
-        logging.debug("")
+        # crc_calculated = crc_func(sml_data)
         logging.debug("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         logging.debug("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
+        # crc_check_sml = False
         
-        logging.debug("🔢 HEX: %s", sml_data.hex())
-        logging.debug("🔢 CRC-Rohbytes: %s", crc_raw.hex())
-        crc_check_sml = False
-        
-        if crc_expected == crc_calculated:
-            crc_check_sml = True    
+        if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
             logging.debug("Verarbeitung SML Telegram starten!")
             
             # HErsteller suchen 07010060320101
