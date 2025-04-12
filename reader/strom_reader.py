@@ -132,7 +132,7 @@ while True:
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
         crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
         crc_expected = int.from_bytes(crc_raw, "little")
-		logging.debug("❗️❗️❗️ %s", crc_check(buffer[idx + 5:idx + 7],sml_data))
+        logging.debug("❗️❗️❗️ %s", crc_check(buffer[idx + 5:idx + 7],sml_data))
         
         crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
 
