@@ -76,10 +76,6 @@ def crc_check(crc_raw,sml_telegram):
     else:
         logging.debug("CRC Prüfung fehlgeschlagen")
         return False
-
-
-    
-            
                             
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
@@ -145,12 +141,11 @@ while True:
         
         if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
             logging.debug("Verarbeitung SML Telegram starten!")
-            
-            # HErsteller suchen 07010060320101
-            logging.debug(" ")
-            logging.debug("*** Bezug ****")
+            #HErsteller suchen 07010060320101
+            # Seriennummer suchen 01 00 60 01 00 FF 
             idx_vendor = 0
             vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
+             sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
             idx_vendor = sml_data.find(vendor_kennung)
             logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
             idx_vendor_offset = 11
@@ -163,11 +158,11 @@ while True:
             
           
             
-            # Seriennummer suchen 01 00 60 01 00 FF
+
             logging.debug(" ")
             logging.debug("*** Gerätekennung ****")
             idx_sn = 0
-            sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
+            
             idx_sn = sml_data.find(sn_kennung)
             logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
             idx_sn_offset = 11
