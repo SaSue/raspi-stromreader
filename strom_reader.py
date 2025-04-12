@@ -280,7 +280,7 @@ while True:
                     "bezug": bezug_kvalue_int,
                     "einspeisung": einspeisung_kvalue_int,
                     "seriennummer": sn_string,
-                    "timestamp": datetime.now().isoformat(),
+                    "timestamp": timestamp,
                     "zaehlername": vendor_str
                 }
                 
