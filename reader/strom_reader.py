@@ -321,7 +321,7 @@ while True:
                     
         else: 
             crc_check_sml = False
-        logging.debug("Kein gültiges Telegram zum verarbeiten")    
+            logging.debug("Kein gültiges Telegram zum verarbeiten")    
         
         # Buffer bereinigen
         buffer = buffer[idx + 7:]
