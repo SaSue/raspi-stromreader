@@ -129,23 +129,18 @@ while True:
         # sml_komplett = buffer[:idx + 7] 
         logging.debug("🔢 komplettes Telegram: %s", buffer[:idx + 7].hex())
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
-        # crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
-        # crc_expected = int.from_bytes(crc_raw, "little")
-        
-        # crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
 
-        # crc_calculated = crc_func(sml_data)
         logging.debug("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         logging.debug("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
-        # crc_check_sml = False
         
+        #prüfen ob crc passt
         if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
             logging.debug("Verarbeitung SML Telegram starten!")
             #HErsteller suchen 07010060320101
             # Seriennummer suchen 01 00 60 01 00 FF 
             idx_vendor = 0
             vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
-             sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
+            sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
             idx_vendor = sml_data.find(vendor_kennung)
             logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
             idx_vendor_offset = 11
