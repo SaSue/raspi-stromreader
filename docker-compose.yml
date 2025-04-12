@@ -1,7 +1,8 @@
 services:
+
   strom-raw-dump:
-    build: .
-    container_name: strom-raw-dump
+    build: ./reader
+    container_name: strom-reader
     devices:
       - "/dev/ttyUSB0:/dev/ttyUSB0"
     volumes:
@@ -11,3 +12,11 @@ services:
       - DEBUG=0
     restart: unless-stopped
     tty: true
+    
+  strom-dashboard:
+    build: ./lighttpd
+    container_name: strom-dashboard
+    ports:
+      - "8080:80"
+    volumes:
+      - /var/www/html:/var/www/localhost/htdocs:ro
