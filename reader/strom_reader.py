@@ -68,6 +68,17 @@ def parse_device_id(hex_string):
     except Exception as e:
         return f"Fehler beim Parsen: {e}"
         
+def crc_check(crc_raw,sml_telegram):
+    crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
+    if crc_func(sml_telegram) == int.from_bytes(crc_raw, "little")
+    	return True
+	else:
+    	return False
+
+
+    
+            
+                            
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
 einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
@@ -88,6 +99,7 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
+
 logging.debug("args.debug: %s", args.debug)
 logging.debug("os.getenv('DEBUG'): %s", os.getenv('DEBUG'))
 logging.debug("debug_env: %s", debug_env)
@@ -116,11 +128,12 @@ while True:
         # Lies genau 3 weitere Bytes (CRC + Füllbyte)
         while len(buffer) < idx + 4 + 3:
             buffer += ser.read(1)
-        sml_komplett = buffer[:idx + 7] 
+        # sml_komplett = buffer[:idx + 7] 
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
         crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
         crc_expected = int.from_bytes(crc_raw, "little")
-
+		logging.debug("❗️❗️❗️ %s", crc_check(buffer[idx + 5:idx + 7],sml_data))
+        
         crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
 
       #  crc_calculated = binascii.crc_hqx(sml_data, 0xffff)
