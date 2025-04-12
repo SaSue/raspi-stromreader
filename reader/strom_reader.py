@@ -151,7 +151,7 @@ while True:
             
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0,11,4)
             
-            #vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
+            vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
             idx_vendor = sml_data.find(vendor_kennung)
             vendor_obis.start = sml_data.find(vendor_kennung)
             idx_vendor_offset = 11
