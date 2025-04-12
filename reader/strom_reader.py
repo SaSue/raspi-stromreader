@@ -32,6 +32,13 @@ class Zaehler:
         self.vendor = vendor
         self.sn = sn
 
+class OBIS_Object:
+    def __init__(self, code, start, offset, laenge):
+        self.code = code
+        self.start = start
+        self.offset = offset
+        self.laenge = laenge
+        
 def decode_manufacturer(hex_string):
     """
     Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
@@ -76,6 +83,9 @@ def crc_check(crc_raw,sml_telegram):
     else:
         logging.debug("CRC Prüfung fehlgeschlagen")
         return False
+        
+def suchen(sml_telegram,idx_position,idx_offset,idx_len):
+    return sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len]).hex()
                             
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
@@ -136,15 +146,23 @@ while True:
         #prüfen ob crc passt
         if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
             logging.debug("Verarbeitung SML Telegram starten!")
-            #HErsteller suchen 07010060320101
+            # HErsteller suchen 07010060320101
             # Seriennummer suchen 01 00 60 01 00 FF 
-            idx_vendor = 0
+            
             vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
-            sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
             idx_vendor = sml_data.find(vendor_kennung)
-            logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
             idx_vendor_offset = 11
-            vendor_str = ""
+            logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
+            
+            sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
+            idx_sn = sml_data.find(sn_kennung)
+            idx_sn_offset = 11
+            idx_sn_len = 4
+            logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
+            
+            logging.debug("n e u : %s", decode_manufacturer(suchen(sml_data,idx_vendor,idx_
+            # mein_zaehler =
+        
             if idx_vendor > 1:
                 vendor_str = decode_manufacturer((sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4]).hex())
             else:
@@ -154,13 +172,9 @@ while True:
           
             
 
-            logging.debug(" ")
-            logging.debug("*** Gerätekennung ****")
-            idx_sn = 0
             
-            idx_sn = sml_data.find(sn_kennung)
-            logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
-            idx_sn_offset = 11
+            
+            
             
             if idx_sn > 1:
                 sn_string = parse_device_id((sml_data[idx_sn + idx_sn_offset:idx_sn + idx_sn_offset + 11]).hex())
