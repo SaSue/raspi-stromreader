@@ -162,7 +162,7 @@ while True:
             idx_sn_len = 4
             logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
             
-            logging.debug("n e u : %s", decode_manufacturer(suchen(sml_data,idx_vendor,idx_
+            logging.debug("n e u : %s", decode_manufacturer(suchen(sml_data,vendor.start,vendor.offset,vendor.laenge)))
             # mein_zaehler =
         
             if idx_vendor > 1:
