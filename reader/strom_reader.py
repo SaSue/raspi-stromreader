@@ -150,9 +150,10 @@ while True:
             # Seriennummer suchen 01 00 60 01 00 FF 
             
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0,11,4)
-            logging.debug("n e u : %s %s %s %s", vendor_obis.code, vendor_obis.start, vendor_obis.offset, vendor_obis.laenge)
-            vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
+            
+            #vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
             idx_vendor = sml_data.find(vendor_kennung)
+            vendor_obis.start = sml_data.find(vendor_kennung)
             idx_vendor_offset = 11
             logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
             
@@ -162,7 +163,7 @@ while True:
             idx_sn_len = 4
             logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
             
-            logging.debug("n e u : %s", decode_manufacturer(suchen(sml_data,vendor.start,vendor.offset,vendor.laenge)))
+            logging.debug("n e u : %s", decode_manufacturer(suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_.laenge)))
             # mein_zaehler =
         
             if idx_vendor > 1:
