@@ -88,10 +88,10 @@ logging.basicConfig(
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
-print(f"args.debug: {args.debug}")
-print(f"os.getenv('DEBUG'): {os.getenv('DEBUG')}")
-print(f"debug_env: {debug_env}")
-print(f"debug_mode: {debug_mode}")
+logging.debug("args.debug: %s", args.debug)
+logging.debug("os.getenv('DEBUG'): %s", os.getenv('DEBUG'))
+logging.debug("debug_env: %s", debug_env)
+logging.debug("debug_mode: %s", debug_mode)
 
 PORT = "/dev/ttyUSB0"
 BAUDRATE = 9600
