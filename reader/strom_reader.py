@@ -129,6 +129,7 @@ while True:
         while len(buffer) < idx + 4 + 3:
             buffer += ser.read(1)
         # sml_komplett = buffer[:idx + 7] 
+        logging.debug("🔢 komplettes Telegram: %s", buffer[:idx + 7].hex())
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
         crc_raw = buffer[idx + 5:idx + 7]   # 2 CRC-Bytes
         crc_expected = int.from_bytes(crc_raw, "little")
@@ -141,7 +142,7 @@ while True:
         logging.debug("")
         logging.debug("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
         logging.debug("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
-        logging.debug("🔢 HEX: %s", sml_komplett.hex())
+        
         logging.debug("🔢 HEX: %s", sml_data.hex())
         logging.debug("🔢 CRC-Rohbytes: %s", crc_raw.hex())
         crc_check_sml = False
