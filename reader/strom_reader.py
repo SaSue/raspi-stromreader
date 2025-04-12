@@ -75,7 +75,7 @@ def crc_check(crc_raw,sml_telegram):
         return True
     else:
         logging.debug("CRC Prüfung fehlgeschlagen")
-    	return False
+        return False
 
 
     
