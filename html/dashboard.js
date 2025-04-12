@@ -132,18 +132,18 @@ fetch('/strom.json')
         timeStyle: 'medium'
       });
       updateElem.textContent = `Letzte Aktualisierung: ${formatted}`;
-      
-      
-  // Live-Badge nur wenn innerhalb 5 Minuten
-  const jetzt = new Date();
-  const diffMinuten = (jetzt - time) / 60000;
-  if (diffMinuten < 5) {
-    liveBadge.classList.remove("hidden");
-  } else {
-    liveBadge.classList.add("hidden");
-  }
+
+      // Badge einblenden wenn Zeit < 5 Minuten alt
+      const jetzt = new Date();
+      const diff = (jetzt - time) / 60000;
+      if (diff < 5) {
+        liveBadge.classList.remove("hidden");
+      } else {
+        liveBadge.classList.add("hidden");
+      }
     } else {
       updateElem.textContent = 'Letzte Aktualisierung: unbekannt';
+      liveBadge.classList.add("hidden");
     }
 
     if (data.seriennummer) {
@@ -155,4 +155,5 @@ fetch('/strom.json')
   .catch(() => {
     updateElem.textContent = 'Letzte Aktualisierung: Fehler beim Laden';
     snElem.textContent = 'Seriennummer: Fehler beim Laden';
+    liveBadge.classList.add("hidden");
   });
