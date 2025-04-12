@@ -331,12 +331,8 @@ while True:
                     
         else: 
             crc_check_sml = False
-        logging.debug(" ")    
-        logging.debug("✅ CRC: erwartet %04X, berechnet %04X → %s",
-                     crc_expected,
-                     crc_calculated,
-                     "✅ gültig" if crc_check_sml == True else "❌ ungültig")
-
+        logging.debug("Kein gültiges Telegram zum verarbeiten")    
+        
         # Buffer bereinigen
         buffer = buffer[idx + 7:]
         
