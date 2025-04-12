@@ -131,6 +131,11 @@ fetch('/strom.json')
     } else {
       updateElem.textContent = 'Letzte Aktualisierung: unbekannt';
     }
+    if (data.seriennummer) {
+        snElem.textContent = `Seriennummer: ${data.seriennummer}`;
+    } else {
+        snElem.textContent = 'Seriennummer: unbekannt';
+    }    
   })
   .catch(() => {
     document.getElementById('last-update-text').textContent = 'Letzte Aktualisierung: Fehler beim Laden';

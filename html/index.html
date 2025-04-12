@@ -110,11 +110,14 @@
       <div class="label">Wochenstatistik</div>
       <canvas id="woche"></canvas>
     </div>
-    <div id="last-update" class="text-sm opacity-70 mt-4 flex items-center gap-2">
-  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+<div id="last-update" class="text-sm opacity-70 mt-4 flex items-center gap-2">
+  <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-yellow-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
   </svg>
-  <span id="last-update-text">Letzte Aktualisierung: ...</span>
+  <div class="flex flex-col">
+    <span id="last-update-text">Letzte Aktualisierung: ...</span>
+    <span id="seriennummer-text">Seriennummer: ...</span>
+  </div>
 </div>
   </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
