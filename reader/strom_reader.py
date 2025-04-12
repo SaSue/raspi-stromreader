@@ -5,12 +5,12 @@ import logging
 import binascii
 import crcmod
 import argparse
-from datetime import datetime
 import os
 import json
 import logging
 from pathlib import Path
 from zoneinfo import ZoneInfo
+from datetime import datetime
 
 # Speicherpfade
 OUTPUT_PATH = Path("/app/data")
@@ -20,6 +20,17 @@ HISTORY_PATH.mkdir(parents=True, exist_ok=True)
 # Zeitkontrolle für JSON-Speicherung
 last_json_write = 0
 wait_time=60
+
+class Messwert:
+    def __init__(self, wert, einheit, obis):
+        self.wert = wert
+        self.einheit = einheit
+        self.obis = obis
+        
+class Zaehler:
+    def __init__(self, vendor, sn):
+        self.vendor = vendor
+        self.sn = sn
 
 def decode_manufacturer(hex_string):
     """
