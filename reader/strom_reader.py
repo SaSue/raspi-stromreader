@@ -70,7 +70,7 @@ def parse_device_id(hex_string):
         
 def crc_check(crc_raw,sml_telegram):
     crc_func = crcmod.mkCrcFun(0x11021, initCrc=0, xorOut=0xFFFF, rev=True)
-    if crc_func(sml_telegram) == int.from_bytes(crc_raw, "little")
+    if crc_func(sml_telegram) == int.from_bytes(crc_raw, "little"):
     	return True
 	else:
     	return False
