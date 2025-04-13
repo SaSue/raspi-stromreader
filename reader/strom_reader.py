@@ -102,7 +102,7 @@ def einheit_suchen(einheit_raw):
     elif einheit_raw == b"\x62\x1b":  # W
         return "W"
     else:
-logging.warning("⚠️ Unbekannte Einheit: %s", einheit_raw.hex())
+        logging.warning("⚠️ Unbekannte Einheit: %s", einheit_raw.hex())
         return "unbekannte Einheit"
 
 def convert_wh_to_kwh(value, unit):
@@ -197,6 +197,9 @@ while True:
 
             sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0)
             sn_obis.start = sml_data.find(sn_obis.code)
+            if sn_obis.start == -1:
+                logging.error("❌ OBIS-Code für Seriennummer nicht gefunden.")
+                continue
             # Seriennummer offset 11, laenge 11
             mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,11,11).hex())
             
@@ -205,6 +208,9 @@ while True:
             # Bezug gesamt suchen 07 01 00 01 08 00 ff
             bezug_obis = OBIS_Object(b"\x07\x01\x00\x01\x08\x00\xff",0)
             bezug_obis.start = sml_data.find(bezug_obis.code)
+            if bezug_obis.start == -1:  
+                logging.error("❌ OBIS-Code für Bezug nicht gefunden.")
+                continue
             bezug = Messwert(None,None,bezug_obis.code) 
             
             bezug.wert = skalieren(
@@ -220,6 +226,9 @@ while True:
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
             einspeisung_obis = OBIS_Object(b"\x07\x01\x00\x02\x08\x00\xff",0)
             einspeisung_obis.start = sml_data.find(einspeisung_obis.code)
+            if einspeisung_obis.start == -1:
+                logging.error("❌ OBIS-Code für Einspeisung nicht gefunden.")
+                continue   
             einspeisung = Messwert(None,None,einspeisung_obis.code)
             
             einspeisung.wert = skalieren(
@@ -234,6 +243,9 @@ while True:
             # Wirkleistung gesamt suchen 07 01 00 10 07 00 ff
             wirk_obis = OBIS_Object(b"\x07\x01\x00\x10\x07\x00\xff",0) 
             wirk_obis.start = sml_data.find(wirk_obis.code)
+            if wirk_obis.start == -1:
+                logging.error("❌ OBIS-Code für Wirkleistung nicht gefunden.")
+                continue
             wirk = Messwert(None,None,wirk_obis.code)
             wirk.wert = skalieren(
                 int(wert_suchen(sml_data,wirk_obis.start,21,4).hex(),16), # Wert Offset 21, laenge 4
@@ -299,5 +311,4 @@ while True:
         else:
             buffer = b""
 
-        logging.debug("🔄 Buffer zurückgesetzt")
-        
+        logging.debug("🔄 Buffer zurückgesetzt")       
