@@ -148,58 +148,42 @@ while True:
         
         #prüfen ob crc passt
         if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
+            
             logging.debug("Verarbeitung SML Telegram starten!")
+            # Zaehler initialisieren
+            mein_zaehler = Zaehler(None,None,None,None,None)
 
             # Herstellerkennung und Seriennummer suchen
             # 07 01 00 60 32 01 01
             # 07 01 00 60 01 00 FF
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0,11,4)
             vendor_obis.start = sml_data.find(vendor_obis.code)
+            mein_zaehler.vendor = decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge))
+
             sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0,11,11)
             sn_obis.start = sml_data.find(sn_obis.code)
+            mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,sn_obis.offset,sn_obis.laenge)) )
             
-            mein_zaehler = Zaehler(decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge)),parse_device_id(wert_suchen(sml_data,sn_obis.start,sn_obis.offset,sn_obis.laenge)) )
             logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
             # bis hierhin alles ok
-            vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
-            idx_vendor = sml_data.find(vendor_kennung)
-            
-            idx_vendor_offset = 11
-            logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
-            
-            sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
-            idx_sn = sml_data.find(sn_kennung)
-            idx_sn_offset = 11
-            idx_sn_len = 4
-            logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
-            
-            
-            
-        
-            if idx_vendor > 1:
-                vendor_str = decode_manufacturer((sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4]).hex())
-            else:
-                vendor_str = "unbekannter Hersteller"
-            logging.debug("Vendor %s", vendor_str)
-            
-          
-            
 
-            
-            
-            
-            
-            if idx_sn > 1:
-                sn_string = parse_device_id((sml_data[idx_sn + idx_sn_offset:idx_sn + idx_sn_offset + 11]).hex())
-            else:
-                sn_string = "unbekannte Gerätekennung"
-            
-            logging.debug("SN %s", sn_string)
-              
             # Bezug gesamt suchen
-            logging.debug(" ")
-            logging.debug("*** Bezug ****")
+            bezug_obis = OBIS_Object(b"\x07\x01\x00\x01\x08\x00\xff",0,22,8)
+            bezug_obis.start = sml_data.find(bezug_obis.code)
+            mein_zaehler.bezug = wert_suchen(sml_data,bezug_obis.start,bezug_obis.offset,bezug_obis.laenge)
+            logging.debug("Bezug gesamt : %s", mein_zaehler.bezug)
+            # Einspeisung gesamt suchen
+            einspeisung_obis = OBIS_Object(b"\x07\x01\x00\x02\x08\x00\xff",0,19,8)
+            einspeisung_obis.start = sml_data.find(einspeisung_obis.code)
+            mein_zaehler.einspeisung = wert_suchen(sml_data,einspeisung_obis.start,einspeisung_obis.offset,einspeisung_obis.laenge)
+            logging.debug("Einspeisung gesamt : %s", mein_zaehler.einspeisung)
+            # Wirkleistung aktuell suchen
+            wirkleistung_obis = OBIS_Object(b"\x07\x01\x00\x10\x07\x00\xff",0,19,4)
+            wirkleistung_obis.start = sml_data.find(wirkleistung_obis.code)
+            mein_zaehler.leistung = wert_suchen(sml_data,wirkleistung_obis.start,wirkleistung_obis.offset,wirkleistung_obis.laenge)
+            logging.debug("Wirkleistung aktuell : %s", mein_zaehler.leistung)
+            
             idx_bezug = 0
             idx_bezug = sml_data.find(bezug_kennung)           
             logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
@@ -317,9 +301,9 @@ while True:
                     "leistung": wirk_value_int, 
                     "bezug": bezug_kvalue_int,
                     "einspeisung": einspeisung_kvalue_int,
-                    "seriennummer": sn_string,
+                    "seriennummer": ,mein_zaehler.sn,
                     "timestamp": timestamp,
-                    "zaehlername": vendor_str
+                    "zaehlername": mein_zaehler.vendor
                 }
                 
                 try:
