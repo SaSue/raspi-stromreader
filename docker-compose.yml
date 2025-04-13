@@ -9,7 +9,7 @@ services:
       - ./logs:/app/logs
       - /var/www/html:/app/data
     environment:
-      - DEBUG=1
+      - DEBUG=0
     restart: unless-stopped
     tty: true
     
