@@ -212,12 +212,8 @@ while True:
              ) 
 
             bezug.einheit = einheit_suchen(wert_suchen(sml_data,bezug_obis.start,19,2)) # Einheit Offset 19, laenge 2
-            mein_zaehler.bezug = Messwert(
-                convert_wh_to_kwh (
-                    bezug.wert, 
-                    bezug.einheit),
-                bezug_obis.code
-            )
+            mein_zaehler.bezug = Messwert(None,None,bezug_obis.code)
+            mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit = convert_wh_to_kwh(bezug.wert, bezug.einheit)  #in kWh umrechnen    
             logging.debug("Bezug %s = %s %s", bezug_obis.code.hex(), mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit)
             
             idx_bezug = 0
