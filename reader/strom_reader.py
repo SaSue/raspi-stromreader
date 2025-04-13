@@ -102,7 +102,7 @@ def einheit_suchen(einheit_raw):
     elif einheit_raw == b"\x62\x1b":  # W
         return "W"
     else:
-        logging.warning("⚠️ Unbekannte Einheit: %s", einheit_raw.hex())
+logging.warning("⚠️ Unbekannte Einheit: %s", einheit_raw.hex())
         return "unbekannte Einheit"
 
 def convert_wh_to_kwh(value, unit):
@@ -189,7 +189,7 @@ while True:
             # 07 01 00 60 01 00 FF
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0)
             vendor_obis.start = sml_data.find(vendor_obis.code)
-            if vendor_obis.start == -1:
+if vendor_obis.start == -1:
                 logging.error("❌ OBIS-Code für Hersteller nicht gefunden.")
                 continue  # Überspringt die Verarbeitung dieses Telegramms
             # Hersteller offset 11, laenge 4
@@ -300,3 +300,4 @@ while True:
             buffer = b""
 
         logging.debug("🔄 Buffer zurückgesetzt")
+        
