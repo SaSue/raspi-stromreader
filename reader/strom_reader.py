@@ -190,7 +190,7 @@ while True:
             
             bezug = Messwert(None,None,bezug_obis.code) 
             
-            bezug.wert = wert_suchen(sml_data,bezug_obis.start,24,8),hex() # 8 Byte für den Wert
+            bezug.wert = wert_suchen(sml_data,bezug_obis.start,24,8).hex() # 8 Byte für den Wert
             logging.debug("Bezug %s = %s", bezug_obis.code.hex(), bezug.wert)
             
             idx_bezug = 0
