@@ -154,7 +154,7 @@ while True:
             sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0,11,11)
             sn_obis.start = sml_data.find(sn_obis.code)
             
-            mein_zaehler = Zaehler(decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge)," sn "))
+            mein_zaehler = Zaehler(decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge))," sn ")
             logging.debug("n e u : %s", wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge) )
             logging.debug("n e u : %s", decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge) ))
             logging.debug("n e u : %s", mein_zaehler.vendor)
