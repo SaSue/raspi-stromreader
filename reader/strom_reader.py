@@ -162,7 +162,7 @@ while True:
 
             sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0,11,11)
             sn_obis.start = sml_data.find(sn_obis.code)
-            mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,sn_obis.offset,sn_obis.laenge)) )
+            mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,sn_obis.offset,sn_obis.laenge))
             
             logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
