@@ -100,6 +100,8 @@ def skalieren(wert, skala):
 def einheit_suchen(einheit_raw):
     if einheit_raw == b"\x62\x1e": # schauen ob Wh
         return ("Wh")
+    elif einheit_raw == b"\x62\x1b": # schauen ob W
+        return ("W")
     else:
         return ("unbekannte Einheit")
 
@@ -203,7 +205,6 @@ while True:
             # Bezug gesamt suchen 07 01 00 01 08 00 ff
             bezug_obis = OBIS_Object(b"\x07\x01\x00\x01\x08\x00\xff",0)
             bezug_obis.start = sml_data.find(bezug_obis.code)
-            
             bezug = Messwert(None,None,bezug_obis.code) 
             
             bezug.wert = skalieren(
@@ -215,44 +216,23 @@ while True:
             mein_zaehler.bezug = Messwert(None,None,bezug_obis.code)
             mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit = convert_wh_to_kwh(bezug.wert, bezug.einheit)  #in kWh umrechnen    
             logging.debug("Bezug %s = %s %s", bezug_obis.code.hex(), mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit)
-            
-            idx_bezug = 0
-            idx_bezug = sml_data.find(bezug_kennung)           
-            logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
-        
-            if idx_bezug > 0:
-            
-                #Scale Faktor raussuchen
-                idx_bezug_scale_offset = 22 # offset für die Skala
-                bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 1]     # 1 Byte für den Scale raussuchen
-                bezug_scale_int = pow(10, int.from_bytes(bezug_scale, byteorder="big", signed=True)) # potenz den scale errechnen
-                logging.debug("Faktor %s = %s", bezug_scale.hex(), bezug_scale_int)
-                
-                # Bezug errechnen
-                idx_bezug_value_offset = 24 # offset für den wer
-                bezug_value = sml_data[idx_bezug + idx_bezug_value_offset:idx_bezug + idx_bezug_value_offset + 8]     # 9 Byte für den Wert
-                bezug_value_int = int(bezug_value.hex(), 16) * bezug_scale_int # potenz den scale errechnen
-                logging.debug("Bezugswert %s = %s", bezug_value.hex(), bezug_value_int)
-                
-                #Einheit raussuchen
-                idx_bezug_unit_offset = 19 # offset für die Einheit
-                bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]   # 2 Byte raussuchen
-                if bezug_unit == b"\x62\x1e": # schauen ob Wh
-                    logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), "Wh")
-                    bezug_unit_string = "kWh" # ich will aber kWh
-                    bezug_kvalue_int = bezug_value_int / 1000 # und den Wert rechnen wir um
-                else: # ansonten unbekannt
-                    bezug_unit_string = "unbekannte Einheit"
-                    logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
-                    bezug_kvalue_int = bezug_value_int 
-                
-                logging.debug("Der Bezug beträgt %s %s",bezug_kvalue_int, bezug_unit_string)
-             
-            else:
-                bezug_unit_string = "kein Bezug"
-                bezug_kvalue_int = 0
-                
+                    
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
+            einspeisung_obis = OBIS_Object(b"\x07\x01\x00\x02\x08\x00\xff",0)
+            einspeisung_obis.start = sml_data.find(einspeisung_obis.code)
+            einspeisung = Messwert(None,None,einspeisung_obis.code)
+            
+            einspeisung.wert = skalieren(
+                int(wert_suchen(sml_data,einspeisung_obis.start,21,8).hex(),16), # Wert Offset 24, laenge 8
+                int.from_bytes(wert_suchen(sml_data,einspeisung_obis.start,19,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
+             )
+            einspeisung.einheit = einheit_suchen(wert_suchen(sml_data,einspeisung_obis.start,16,2)) # Einheit Offset 19, laenge 2
+            mein_zaehler.einspeisung = Messwert(None,None,einspeisung_obis.code)
+            mein_zaehler.einspeisung.wert, mein_zaehler.einspeisung.einheit = convert_wh_to_kwh(einspeisung.wert, einspeisung.einheit)
+            logging.debug("Einspeisung %s = %s %s", einspeisung_obis.code.hex(), mein_zaehler.einspeisung.wert, mein_zaehler.einspeisung.einheit)
+            
+
+
             logging.debug(" ")
             logging.debug("*** Einspeisung ****")
             idx_einspeisung = 0
@@ -331,8 +311,10 @@ while True:
     
                 output_data = {
                     "leistung": wirk_value_int, 
-                    "bezug": bezug_kvalue_int,
-                    "einspeisung": einspeisung_kvalue_int,
+                    "bezug": mein_zaehler.bezug.wert,
+                    "bezug_einheit": mein_zaehler.bezug.einheit,
+                    "einspeisung": mein_zaehler.einspeisung.wert, 
+                    "einspeisung_einheit": mein_zaehler.einspeisung.einheit,
                     "seriennummer": mein_zaehler.sn,
                     "timestamp": timestamp,
                     "zaehlername": mein_zaehler.vendor
