@@ -191,8 +191,8 @@ while True:
             bezug = Messwert(None,None,bezug_obis.code) 
             
             bezug.wert = skalieren(
-                int(wert_suchen(sml_data,bezug_obis.start,24,8).hex(),16), # Offset 24, laenge 8
-                1
+                int(wert_suchen(sml_data,bezug_obis.start,24,8).hex(),16), # Wert Offset 24, laenge 8
+                int.from_bytes(wert_suchen(sml_data,bezug_obis.start,22,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
              ) 
             logging.debug("Bezug %s = %s", bezug_obis.code.hex(), bezug.wert)
             
