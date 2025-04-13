@@ -189,7 +189,7 @@ while True:
             # 07 01 00 60 01 00 FF
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0)
             vendor_obis.start = sml_data.find(vendor_obis.code)
-if vendor_obis.start == -1:
+            if vendor_obis.start == -1:
                 logging.error("❌ OBIS-Code für Hersteller nicht gefunden.")
                 continue  # Überspringt die Verarbeitung dieses Telegramms
             # Hersteller offset 11, laenge 4
