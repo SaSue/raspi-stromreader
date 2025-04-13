@@ -103,6 +103,23 @@ def einheit_suchen(einheit_raw):
     else:
         return ("unbekannte Einheit")
 
+def convert_wh_to_kwh(value, unit):
+    """
+    Konvertiert einen Wert von Wh in kWh und passt die Einheit an.
+
+    :param value: Der Wert in Wh (int oder float).
+    :param unit: Die Einheit als String (z. B. "Wh").
+    :return: Tuple (converted_value, converted_unit)
+    """
+    if unit == "Wh":
+        converted_value = value / 1000  # Umrechnung in kWh
+        converted_unit = "kWh"         # Einheit anpassen
+    else:
+        converted_value = value        # Keine Umrechnung, wenn Einheit nicht "Wh" ist
+        converted_unit = unit          # Einheit bleibt unverändert
+
+    return converted_value, converted_unit
+
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
 einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
@@ -195,7 +212,13 @@ while True:
              ) 
 
             bezug.einheit = einheit_suchen(wert_suchen(sml_data,bezug_obis.start,19,2)) # Einheit Offset 19, laenge 2
-            logging.debug("Bezug %s = %s %s", bezug_obis.code.hex(), bezug.wert, bezug.einheit)
+            mein_zaehler.bezug = Messwert(
+                convert_wh_to_kwh (
+                    bezug.wert, 
+                    bezug.einheit),
+                bezug_obis.code
+            )
+            logging.debug("Bezug %s = %s %s", bezug_obis.code.hex(), mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit)
             
             idx_bezug = 0
             idx_bezug = sml_data.find(bezug_kennung)           
