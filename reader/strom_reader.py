@@ -94,6 +94,15 @@ def crc_check(crc_raw,sml_telegram):
         
 def wert_suchen(sml_telegram,idx_position,idx_offset,idx_len):
     return (sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len].hex())
+
+def skalieren(wert, skala):
+    """
+    Skaliert den Wert mit dem angegebenen Skalenfaktor.
+    """
+    if skala == 0:
+        return wert
+    else:
+        return wert * (10 ** skala)
                             
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
@@ -175,7 +184,16 @@ while True:
             
             # bis hierhin alles ok
 
-
+            # Bezug gesamt suchen 07 01 00 01 08 00 ff
+            bezug_obis = OBIS_Object(b"\x07\x01\x00\x01\x08\x00\xff",0)
+            bezug_obis.start = sml_data.find(bezug_obis.code)
+            
+            bezug = Messwert(None,None,bezug_obis.code) 
+            bezug.wert = skalieren(
+                int(wert_suchen(sml_data,bezug_obis.start,24,8),16),
+                int.from_bytes(wert_suchen(sml_data,bezug_obis.start,22,1), byteorder="big", signed=True)
+            )
+            logging.debug("Bezug %s = %s", bezug_obis.code.hex(), bezug.wert)
             
             idx_bezug = 0
             idx_bezug = sml_data.find(bezug_kennung)           
