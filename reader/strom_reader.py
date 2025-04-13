@@ -250,7 +250,8 @@ while True:
                 date_str = now.strftime("%Y-%m-%d")
     
                 output_data = {
-                    "leistung": wirk_value_int, 
+                    "leistung": mein_zaehler.leistung.wert,
+                    "leistung_einheit": mein_zaehler.leistung.einheit, 
                     "bezug": mein_zaehler.bezug.wert,
                     "bezug_einheit": mein_zaehler.bezug.einheit,
                     "einspeisung": mein_zaehler.einspeisung.wert, 
