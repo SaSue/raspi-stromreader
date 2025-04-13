@@ -93,7 +93,7 @@ def crc_check(crc_raw,sml_telegram):
         return False
         
 def wert_suchen(sml_telegram,idx_position,idx_offset,idx_len):
-    return sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len].hex()
+    return sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len]
 
 def skalieren(wert, skala):
     """
