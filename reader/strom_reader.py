@@ -28,9 +28,12 @@ class Messwert:
         self.obis = obis
         
 class Zaehler:
-    def __init__(self, vendor, sn):
+    def __init__(self, vendor, sn, leistung, bezug, einspeisung):
         self.vendor = vendor
         self.sn = sn
+        self.leistung = leistung
+        self.bezug = bezug
+        self.einspeisung = einspeisung
 
 class OBIS_Object:
     def __init__(self, code, start, offset, laenge):
@@ -146,9 +149,10 @@ while True:
         #prüfen ob crc passt
         if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
             logging.debug("Verarbeitung SML Telegram starten!")
-            # HErsteller suchen 07010060320101
-            # Seriennummer suchen 01 00 60 01 00 FF 
-            
+
+            # Herstellerkennung und Seriennummer suchen
+            # 07 01 00 60 32 01 01
+            # 07 01 00 60 01 00 FF
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0,11,4)
             vendor_obis.start = sml_data.find(vendor_obis.code)
             sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0,11,11)
@@ -157,6 +161,7 @@ while True:
             mein_zaehler = Zaehler(decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge)),parse_device_id(wert_suchen(sml_data,sn_obis.start,sn_obis.offset,sn_obis.laenge)) )
             logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
+            # bis hierhin alles ok
             vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
             idx_vendor = sml_data.find(vendor_kennung)
             
