@@ -301,7 +301,7 @@ while True:
                     "leistung": wirk_value_int, 
                     "bezug": bezug_kvalue_int,
                     "einspeisung": einspeisung_kvalue_int,
-                    "seriennummer": ,mein_zaehler.sn,
+                    "seriennummer": mein_zaehler.sn,
                     "timestamp": timestamp,
                     "zaehlername": mein_zaehler.vendor
                 }
