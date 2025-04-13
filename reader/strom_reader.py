@@ -173,12 +173,12 @@ while True:
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0)
             vendor_obis.start = sml_data.find(vendor_obis.code)
             # Hersteller offset 11, laenge 4
-            mein_zaehler.vendor = decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,11,4))
+            mein_zaehler.vendor = decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,11,4).hex())
 
             sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0)
             sn_obis.start = sml_data.find(sn_obis.code)
             # Seriennummer offset 11, laenge 11
-            mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,11,11))
+            mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,11,11).hex())
             
             logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
