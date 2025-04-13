@@ -7,7 +7,6 @@ import crcmod
 import argparse
 import os
 import json
-import logging
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from datetime import datetime
@@ -98,12 +97,13 @@ def skalieren(wert, skala):
         return wert * (10 ** skala)
 
 def einheit_suchen(einheit_raw):
-    if einheit_raw == b"\x62\x1e": # schauen ob Wh
-        return ("Wh")
-    elif einheit_raw == b"\x62\x1b": # schauen ob W
-        return ("W")
+    if einheit_raw == b"\x62\x1e":  # Wh
+        return "Wh"
+    elif einheit_raw == b"\x62\x1b":  # W
+        return "W"
     else:
-        return ("unbekannte Einheit")
+        logging.warning("⚠️ Unbekannte Einheit: %s", einheit_raw.hex())
+        return "unbekannte Einheit"
 
 def convert_wh_to_kwh(value, unit):
     """
@@ -122,12 +122,7 @@ def convert_wh_to_kwh(value, unit):
 
     return converted_value, converted_unit
 
-#obis kennungen
-bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
-einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
-wirk_kennung = b"\x07\x01\x00\x10\x07\x00\xff"
-
-#sml kennzeichen
+#sml Ende kennzeichen
 sml_ende = b"\x1b\x1b\x1b\x1a"
 
 parser = argparse.ArgumentParser()
@@ -153,7 +148,12 @@ BAUDRATE = 9600
 
 logging.debug("🔌 Verbinde mit %s @ %d Baud", PORT, BAUDRATE)
 
-ser = serial.Serial(PORT, BAUDRATE, timeout=1)
+try:
+    ser = serial.Serial(PORT, BAUDRATE, timeout=1)
+    logging.debug("🔌 Verbindung erfolgreich hergestellt.")
+except serial.SerialException as e:
+    logging.error("❌ Fehler beim Öffnen des seriellen Ports: %s", e)
+    exit(1)
 
 buffer = b""
 while True:
@@ -171,7 +171,6 @@ while True:
         # Lies genau 3 weitere Bytes (CRC + Füllbyte)
         while len(buffer) < idx + 4 + 3:
             buffer += ser.read(1)
-        # sml_komplett = buffer[:idx + 7] 
         logging.debug("🔢 komplettes Telegram: %s", buffer[:idx + 7].hex())
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
 
@@ -179,17 +178,20 @@ while True:
         logging.debug("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
         
         #prüfen ob crc passt
-        if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
+        if crc_check(buffer[idx + 5:idx + 7], sml_data) == True:   
             
             logging.debug("Verarbeitung SML Telegram starten!")
             # Zaehler initialisieren
-            mein_zaehler = Zaehler(None,None,None,None,None)
+            mein_zaehler = Zaehler(None, None, None, None, None)
 
             # Herstellerkennung und Seriennummer suchen
             # 07 01 00 60 32 01 01
             # 07 01 00 60 01 00 FF
             vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0)
             vendor_obis.start = sml_data.find(vendor_obis.code)
+            if vendor_obis.start == -1:
+                logging.error("❌ OBIS-Code für Hersteller nicht gefunden.")
+                continue  # Überspringt die Verarbeitung dieses Telegramms
             # Hersteller offset 11, laenge 4
             mein_zaehler.vendor = decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,11,4).hex())
 
@@ -200,8 +202,6 @@ while True:
             
             logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
-            # bis hierhin alles ok
-
             # Bezug gesamt suchen 07 01 00 01 08 00 ff
             bezug_obis = OBIS_Object(b"\x07\x01\x00\x01\x08\x00\xff",0)
             bezug_obis.start = sml_data.find(bezug_obis.code)
@@ -285,6 +285,7 @@ while True:
                     
                 except Exception as e:
                     logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
+                    continue  # Überspringt den aktuellen Zyklus und setzt die Schleife fort
             else:  
                 logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
                   
@@ -293,6 +294,9 @@ while True:
             logging.debug("Kein gültiges Telegram zum verarbeiten")    
         
         # Buffer bereinigen
-        buffer = buffer[idx + 7:]
+        if idx + 7 <= len(buffer):
+            buffer = buffer[idx + 7:]
+        else:
+            buffer = b""
+
         logging.debug("🔄 Buffer zurückgesetzt")
-        
