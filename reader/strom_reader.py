@@ -285,11 +285,14 @@ while True:
                     
                 except Exception as e:
                     logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
-                    
+            else:  
+                logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
+                  
         else: 
             crc_check_sml = False
             logging.debug("Kein gültiges Telegram zum verarbeiten")    
         
         # Buffer bereinigen
         buffer = buffer[idx + 7:]
+        logging.debug("🔄 Buffer zurückgesetzt")
         
