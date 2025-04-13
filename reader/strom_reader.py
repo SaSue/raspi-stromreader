@@ -155,11 +155,7 @@ while True:
             sn_obis.start = sml_data.find(sn_obis.code)
             
             mein_zaehler = Zaehler(decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge)),parse_device_id(wert_suchen(sml_data,sn_obis.start,sn_obis.offset,sn_obis.laenge)) )
-            logging.debug("n e u : %s", wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge) )
-            logging.debug("n e u : %s", decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge) ))
-            logging.debug("n e u : %s %s", mein_zaehler.vendor, mein_zaehler.sn)
-            
-            
+            logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
             vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
             idx_vendor = sml_data.find(vendor_kennung)
