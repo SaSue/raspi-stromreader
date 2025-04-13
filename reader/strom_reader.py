@@ -100,7 +100,7 @@ def skalieren(wert, skala):
 def einheit_suchen(einheit_raw):
     if einheit_raw == b"\x62\x1e": # schauen ob Wh
         return ("Wh")
-    else
+    else:
         return ("unbekannte Einheit")
 
 #obis kennungen
