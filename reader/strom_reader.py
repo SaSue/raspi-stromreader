@@ -40,13 +40,6 @@ class OBIS_Object:
         self.code = code
         self.start = start
 
-class OBIS_Wert:
-    def __init__(self, start, offset, laenge, wert):
-        self.start = start
-        self.offset = offset
-        self.laenge = laenge
-        self.wert = wert
-
 def decode_manufacturer(hex_string):
     """
     Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
@@ -103,7 +96,13 @@ def skalieren(wert, skala):
         return wert
     else:
         return wert * (10 ** skala)
-                            
+
+def einheit_suchen(einheit_raw):
+    if einheit_raw == b"\x62\x1e": # schauen ob Wh
+        return ("Wh")
+    else
+        return ("unbekannte Einheit")
+
 #obis kennungen
 bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
 einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
@@ -194,7 +193,9 @@ while True:
                 int(wert_suchen(sml_data,bezug_obis.start,24,8).hex(),16), # Wert Offset 24, laenge 8
                 int.from_bytes(wert_suchen(sml_data,bezug_obis.start,22,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
              ) 
-            logging.debug("Bezug %s = %s", bezug_obis.code.hex(), bezug.wert)
+
+            bezug.einheit = einheit_suchen(wert_suchen(sml_data,bezug_obis.start,19,2)) # Einheit Offset 19, laenge 2
+            logging.debug("Bezug %s = %s %s", bezug_obis.code.hex(), bezug.wert, bezug.einheit)
             
             idx_bezug = 0
             idx_bezug = sml_data.find(bezug_kennung)           
