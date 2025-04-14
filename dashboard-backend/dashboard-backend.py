@@ -7,7 +7,7 @@ DB_PATH = "/app/data/strom.sqlite"
 
 # === Logging einrichten ===
 logging.basicConfig(
-    level=logging.DEBUG,  # Setze das Logging-Level auf DEBUG
+    level=logging.INFO,  # Setze das Logging-Level auf DEBUG
     format="%(asctime)s [%(levelname)s] %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
