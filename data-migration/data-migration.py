@@ -64,7 +64,7 @@ for json_file in json_files:
                 einspeisung = float(eintrag["einspeisung"])
                 leistung = int(eintrag["leistung"])
 
-                logger.info("🔁 Eintrag [%d]: %s", i, timestamp)
+                # logger.info("🔁 Eintrag [%d]: %s", i, timestamp)
                 logger.debug("⚙️ Werte → Bezug: %.4f, Einspeisung: %.4f, Leistung: %d", bezug, einspeisung, leistung)
 
                 cursor.execute("""
@@ -73,7 +73,7 @@ for json_file in json_files:
                 """, (ZAEHLER_ID, timestamp, bezug, einspeisung, leistung))
 
                 anzahl += 1
-                logger.info("✅ Gespeichert [%d]: %s", anzahl, timestamp)
+                logger.debug("✅ Gespeichert [%d]: %s", anzahl, timestamp)
 
             except Exception as e:
                 logger.error("❌ Fehler beim Einfügen [%d] (%s): %s", i, timestamp, str(e))
