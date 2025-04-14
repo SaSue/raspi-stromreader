@@ -25,7 +25,7 @@ for eintrag in daten:
     else:
         cursor.execute(
             "INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)",
-            (eintrag["seriennummer"], eintrag["hersteller"])
+            (eintrag["seriennummer"], eintrag["zaehlername"])
         )
         zaehler_id = cursor.lastrowid
         print(f"💾 Neuer Zähler in SQLite gespeichert: {eintrag['seriennummer']}, {eintrag['hersteller']}")
