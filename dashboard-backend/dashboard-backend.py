@@ -32,11 +32,12 @@ def get_dashboard_data():
         leistung = cursor.execute("SELECT wirkleistung_watt FROM messwerte ORDER BY timestamp DESC LIMIT 1").fetchone()
         
         logger.debug("🔍 Abfrage: Tagesbezug")
-        bezug = (cursor.execute("""
+        bezug = round((cursor.execute("""
             SELECT bezug_kwh FROM messwerte 
             WHERE DATE(timestamp) = DATE('now') 
             ORDER BY timestamp DESC LIMIT 1
-        """).fetchone())["bezug_kwh"]
+        """).fetchone())["bezug_kwh"],2)
+        logger.debug("📊 Tagesbezug: %.2f kWh", bezug)
 
         logger.debug("🔍 Abfrage: Tageseinspeisung")
 
