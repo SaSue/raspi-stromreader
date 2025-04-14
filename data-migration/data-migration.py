@@ -43,6 +43,10 @@ for i, eintrag in enumerate(daten):
         anzahl_fehler += 1
         print(f"❌ Fehler bei Eintrag {i}: {e}")
         continue
+    finally:
+        print(f"🚪 Script wurde beendet. {anzahl_erfolgreich} Einträge übernommen, {anzahl_fehler} Fehler.")
+        conn.commit()
+        conn.close()
 
 # Abschluss
 conn.commit()
