@@ -32,27 +32,11 @@ def get_dashboard_data():
         leistung = cursor.execute("SELECT wirkleistung_watt FROM messwerte ORDER BY timestamp DESC LIMIT 1").fetchone()
         logger.debug("🔍 Abfrage: Tagesbezug")
 
-        # Ersten und letzten Wert des Tages abrufen
-        bezug_start = cursor.execute("""
-            SELECT bezug_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now') 
-            ORDER BY timestamp ASC LIMIT 1
-        """).fetchone()
-
-        bezug_end = cursor.execute("""
+        bezug = cursor.execute("""
             SELECT bezug_kwh FROM messwerte 
             WHERE DATE(timestamp) = DATE('now') 
             ORDER BY timestamp DESC LIMIT 1
         """).fetchone()
-
-        # Differenz berechnen, falls beide Werte vorhanden sind
-        if bezug_start and bezug_end:
-            bezug = bezug_end["bezug_kwh"] - bezug_start["bezug_kwh"]
-            logger.debug("📊 Tagesbezug berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
-                         bezug_start["bezug_kwh"], bezug_end["bezug_kwh"], bezug)
-        else:
-            bezug = 0
-            logger.debug("⚠️ Kein Tagesbezug berechnet, da nicht genügend Daten vorhanden sind.")
 
         logger.debug("🔍 Abfrage: Tageseinspeisung")
 
