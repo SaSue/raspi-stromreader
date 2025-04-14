@@ -97,7 +97,7 @@ def save_to_sqlite(seriennummer, hersteller, bezug_kwh, einspeisung_kwh, wirklei
 
     conn.commit()
     conn.close()
-    logging.debug("💾 Messwerte in SQLite gespeichert: %s", (seriennummer, bezug_kwh, einspeisung_kwh, wirkleistung))
+    logging.debug("💾 Messwerte in SQLite gespeichert: %s", (seriennummer, bezug_kwh, einspeisung_kwh, wirkleistung_watt))
 
 
 def decode_manufacturer(hex_string):
@@ -346,7 +346,6 @@ while True:
                     logging.debug("💾 Daten in SQLite gespeichert")   
                 except Exception as e:
                     logging.error("❌ Fehler beim Speichern in SQLite: %s", e)
-                    continue
 
                 # JSON-Daten speichern  
                 try:
@@ -372,8 +371,7 @@ while True:
                     
                 except Exception as e:
                     logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
-                    continue  # Überspringt den aktuellen Zyklus und setzt die Schleife fort
-                # Wartezeitpunkt aktualisieren
+
                 last_json_write = current_time             
             else:
                 logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
