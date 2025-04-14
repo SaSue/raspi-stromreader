@@ -7,6 +7,7 @@ import crcmod
 import argparse
 import os
 import json
+import sqlite3
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from datetime import datetime
@@ -15,6 +16,38 @@ from datetime import datetime
 OUTPUT_PATH = Path("/app/data")
 HISTORY_PATH = OUTPUT_PATH / "history"
 HISTORY_PATH.mkdir(parents=True, exist_ok=True)
+
+# SQLite-Datei definieren
+DB_PATH = Path("/app/data/strom.sqlite")
+
+# Sicherstellen, dass die Datenbank existiert
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+conn = sqlite3.connect(DB_PATH)
+c = conn.cursor()
+
+# Tabellen erstellen, falls sie nicht existieren
+c.execute("""
+CREATE TABLE IF NOT EXISTS zaehler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seriennummer TEXT UNIQUE,
+    hersteller TEXT,
+    name TEXT
+)
+""")
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS messwerte (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    zaehler_id INTEGER,
+    timestamp TEXT,
+    bezug_kwh REAL,
+    einspeisung_kwh REAL,
+    wirkleistung_watt REAL,
+    FOREIGN KEY (zaehler_id) REFERENCES zaehler(id)
+)
+""")
+conn.commit()
+conn.close()
 
 # Zeitkontrolle für JSON-Speicherung
 last_json_write = 0
@@ -38,6 +71,34 @@ class OBIS_Object:
     def __init__(self, code, start):
         self.code = code
         self.start = start
+
+# Funktion: Werte speichern
+def save_to_sqlite(seriennummer, hersteller, bezug_kwh, einspeisung_kwh, wirkleistung_watt):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # Zähler-ID abrufen oder einfügen
+    c.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (seriennummer,))
+    row = c.fetchone()
+    if row:
+        zaehler_id = row[0]
+        logging.debug("🔍 Zähler-ID gefunden: %s", zaehler_id)
+    else:
+        c.execute("INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)", (seriennummer, hersteller))
+        zaehler_id = c.lastrowid
+        logging.debug("💾 Neuer Zähler in SQLite gespeichert: %s", (seriennummer, hersteller))
+
+    # Messwert einfügen
+    timestamp = datetime.now().isoformat()
+    c.execute("""
+        INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
+        VALUES (?, ?, ?, ?, ?)
+    """, (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt))
+
+    conn.commit()
+    conn.close()
+    logging.debug("💾 Messwerte in SQLite gespeichert: %s", (seriennummer, bezug_kwh, einspeisung_kwh, wirkleistung))
+
 
 def decode_manufacturer(hex_string):
     """
@@ -273,6 +334,21 @@ while True:
                     "zaehlername": mein_zaehler.vendor
                 }
                 
+                # SQLite-Daten speichern
+                try:
+                    save_to_sqlite(
+                        mein_zaehler.sn,
+                        mein_zaehler.vendor,
+                        mein_zaehler.bezug.wert,
+                        mein_zaehler.einspeisung.wert,
+                        mein_zaehler.leistung.wert
+                    )
+                    logging.debug("💾 Daten in SQLite gespeichert")   
+                except Exception as e:
+                    logging.error("❌ Fehler beim Speichern in SQLite: %s", e)
+                    continue
+
+                # JSON-Daten speichern  
                 try:
                     # Aktuelle Datei speichern
                     with open(OUTPUT_PATH / "strom.json", "w") as f:
