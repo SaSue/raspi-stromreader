@@ -48,15 +48,6 @@ def get_dashboard_data():
         """).fetchone())["einspeisung_kwh"],2)
         logger.debug("📊 Tageseinspeisung: %.2f kWh", einspeisung)
 
-        # Differenz berechnen, falls beide Werte vorhanden sind
-        if einspeisung_start and einspeisung_end:
-            einspeisung = einspeisung_end["einspeisung_kwh"] - einspeisung_start["einspeisung_kwh"]
-            logger.debug("📊 Tageseinspeisung berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
-                         einspeisung_start["einspeisung_kwh"], einspeisung_end["einspeisung_kwh"], einspeisung)
-        else:
-            einspeisung = 0
-            logger.debug("⚠️ Keine Tageseinspeisung berechnet, da nicht genügend Daten vorhanden sind.")
-
         logger.debug("🔍 Abfrage: Verbrauch heute")
 
         # Ersten und letzten Wert des heutigen Tages abrufen
