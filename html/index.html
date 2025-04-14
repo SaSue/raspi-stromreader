@@ -296,6 +296,15 @@
     }
 
     function aktualisiereAnzeige(aktuell) {
+      // Momentanverbrauch
+      document.getElementById("leistung").textContent = `${aktuell.leistung || '--'} W`;
+
+      // Bezug gesamt
+      document.getElementById("bezug").textContent = `${(aktuell.bezug || 0).toFixed(2)} kWh`;
+
+      // Einspeisung gesamt
+      document.getElementById("einspeisung").textContent = `${(aktuell.einspeisung || 0).toFixed(2)} kWh`;
+
       // Tagesverbrauch heute
       document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
       document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
