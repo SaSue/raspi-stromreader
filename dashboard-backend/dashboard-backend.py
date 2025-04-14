@@ -115,6 +115,34 @@ def get_dashboard_data():
         conn.close()
         logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
 
+@app.route('/api/tagesverlauf', methods=['GET'])
+def get_tagesverlauf():
+    logger.debug("📊 API-Aufruf: /api/tagesverlauf")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Tagesverlauf-Daten abrufen
+        verlauf = cursor.execute("""
+            SELECT timestamp, leistung_watt 
+            FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now')
+            ORDER BY timestamp ASC
+        """).fetchall()
+
+        # Daten in ein JSON-kompatibles Format umwandeln
+        verlauf_data = [{"timestamp": row["timestamp"], "bezug": row["leistung_watt"]} for row in verlauf]
+        logger.debug("📊 Tagesverlauf-Daten: %s", verlauf_data)
+        return jsonify(verlauf_data)
+
+    except Exception as e:
+        logger.error("❌ Fehler beim Abrufen des Tagesverlaufs: %s", str(e))
+        return jsonify({"error": "Fehler beim Abrufen des Tagesverlaufs"}), 500
+
+    finally:
+        conn.close()
+        logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
+
 if __name__ == '__main__':
     logger.debug("🚀 Starte Flask-Server auf Port 5000...")
     app.run(host='0.0.0.0', port=5000)

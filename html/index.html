@@ -146,8 +146,75 @@
       }
     }
 
+    async function fetchTagesverlauf() {
+      try {
+        const response = await fetch('/api/tagesverlauf');
+        const verlaufData = await response.json();
+
+        // Daten für das Diagramm vorbereiten
+        const labels = verlaufData.map(entry => new Date(entry.timestamp).toLocaleTimeString());
+        const values = verlaufData.map(entry => entry.bezug);
+
+        // Diagramm aktualisieren
+        updateTagesverlaufChart(labels, values);
+      } catch (error) {
+        console.error('Fehler beim Abrufen des Tagesverlaufs:', error);
+      }
+    }
+
+    // Funktion zum Aktualisieren des Diagramms
+    function updateTagesverlaufChart(labels, values) {
+      const ctx = document.getElementById('verlauf').getContext('2d');
+
+      // Falls das Diagramm bereits existiert, zerstöre es
+      if (window.tagesverlaufChart) {
+        window.tagesverlaufChart.destroy();
+      }
+
+      // Neues Diagramm erstellen
+      window.tagesverlaufChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Tagesverlauf (Bezug in kWh)',
+            data: values,
+            borderColor: 'rgba(0, 123, 255, 1)',
+            backgroundColor: 'rgba(0, 123, 255, 0.2)',
+            borderWidth: 2,
+            fill: true,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+            }
+          },
+          scales: {
+            x: {
+              title: {
+                display: true,
+                text: 'Zeit'
+              }
+            },
+            y: {
+              title: {
+                display: true,
+                text: 'Bezug (kWh)'
+              },
+              beginAtZero: true
+            }
+          }
+        }
+      });
+    }
+
     // Daten beim Laden der Seite abrufen
     fetchDashboardData();
+    fetchTagesverlauf();
 
     // Daten alle 60 Sekunden aktualisieren
     setInterval(fetchDashboardData, 60000);
