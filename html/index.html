@@ -137,6 +137,7 @@
   <div class="tab">
     <button id="dashboard-tab" class="active" onclick="showTab('dashboard', this)">Dashboard</button>
     <button id="tagesdaten-tab" onclick="showTab('tagesdaten', this)">Tagesdaten</button>
+    <button id="wochenstatistik-tab" onclick="showTab('wochenstatistik', this)">Wochenstatistik</button>
   </div>
 
   <!-- Dashboard Tab -->
@@ -167,10 +168,6 @@
         <div class="label">Tagesverlauf</div>
         <canvas id="verlauf"></canvas>
       </div>
-      <div class="card" style="grid-column: 1 / -1">
-        <div class="label">Wochenstatistik</div>
-        <canvas id="woche"></canvas>
-      </div>
     </div>
   </div>
 
@@ -194,9 +191,22 @@
     </div>
   </div>
 
+  <!-- Wochenstatistik Tab -->
+  <div id="wochenstatistik" class="tab-content">
+    <div class="card">
+      <div class="label">Datum auswählen</div>
+      <input type="date" id="wochenstatistik-datum" onchange="fetchWochenstatistik()" />
+    </div>
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Wochenstatistik</div>
+      <canvas id="wochenstatistik-chart"></canvas>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     let tagesverlaufChart; // Variable für das Tagesverlauf-Diagramm
+    let wochenstatistikChart; // Variable für das Wochenstatistik-Diagramm
 
     function formatDatum(date) {
       return date.toISOString().split("T")[0];
@@ -297,18 +307,28 @@
     }
 
     async function fetchWochenstatistik() {
+      const datum = document.getElementById('wochenstatistik-datum').value;
+      if (!datum) return;
+
       try {
-        const response = await fetch('/api/wochenstatistik');
-        const statistikData = await response.json();
+        const response = await fetch(`/api/wochenstatistik?datum=${datum}`);
+        const data = await response.json();
 
-        const labels = statistikData.map(entry => entry.datum);
-        const values = statistikData.map(entry => entry.verbrauch);
+        const labels = data.map(entry => entry.datum);
+        const values = data.map(entry => entry.verbrauch);
 
-        const ctx = document.getElementById('woche').getContext('2d');
-        new Chart(ctx, {
+        const ctx = document.getElementById('wochenstatistik-chart').getContext('2d');
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (wochenstatistikChart) {
+          wochenstatistikChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        wochenstatistikChart = new Chart(ctx, {
           type: 'bar',
           data: {
-            labels: labels,
+            labels,
             datasets: [{
               label: 'Tagesverbrauch (kWh)',
               data: values,
@@ -381,13 +401,6 @@
               borderColor: '#00aaff',
               fill: false
             }]
-          },
-          options: {
-            scales: {
-              x: {
-                ticks: { autoSkip: true, maxTicksLimit: 10 }
-              }
-            }
           }
         });
       } catch (error) {
@@ -410,7 +423,6 @@
     // Daten beim Laden der Seite abrufen
     fetchDashboardData();
     fetchTagesverlauf();
-    fetchWochenstatistik();
 
     // Daten alle 60 Sekunden aktualisieren
     setInterval(fetchDashboardData, 60000);

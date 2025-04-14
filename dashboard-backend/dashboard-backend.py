@@ -146,19 +146,25 @@ def get_tagesverlauf():
 @app.route('/api/wochenstatistik', methods=['GET'])
 def get_wochenstatistik():
     logger.debug("📊 API-Aufruf: /api/wochenstatistik")
+    datum = request.args.get('datum')  # Startdatum aus den Query-Parametern abrufen
+    if not datum:
+        logger.error("❌ Kein Datum angegeben.")
+        return jsonify({"error": "Kein Datum angegeben"}), 400
+
     conn = get_db_connection()
     cursor = conn.cursor()
 
     try:
-        # Wochenstatistik-Daten abrufen (letzte 7 Tage)
+        # Wochenstatistik-Daten abrufen (Startdatum + 6 Tage)
+        logger.debug("🔍 Abfrage: Wochenstatistik ab %s", datum)
         statistik = cursor.execute("""
             SELECT DATE(timestamp) as datum, 
                    MAX(bezug_kwh) - MIN(bezug_kwh) as tagesverbrauch
             FROM messwerte
-            WHERE DATE(timestamp) >= DATE('now', '-6 days')
+            WHERE DATE(timestamp) BETWEEN DATE(?) AND DATE(?, '+6 days')
             GROUP BY DATE(timestamp)
             ORDER BY datum ASC
-        """).fetchall()
+        """, (datum, datum)).fetchall()
 
         # Daten in ein JSON-kompatibles Format umwandeln
         statistik_data = [{"datum": row["datum"], "verbrauch": row["tagesverbrauch"]} for row in statistik]
