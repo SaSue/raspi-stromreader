@@ -29,11 +29,11 @@
         background-color: var(--card-bg-dark);
       }
       .details {
-        color: var(--text-dark); /* Textfarbe für Details im Darkmode */
+        color: var(--text-dark) !important; /* Erzwinge die Textfarbe für Details im Darkmode */
       }
       .value {
-    color: var(--text-dark); /* Textfarbe für Hauptwerte im Darkmode */
-  }
+        color: var(--text-dark); /* Textfarbe für Hauptwerte im Darkmode */
+      }
     }
 
     @media (prefers-color-scheme: light) {
