@@ -14,6 +14,9 @@
       --neonyellow: #a6ff00;
       --card-bg-light: #f5f5f5;
       --card-bg-dark: #1e1e1e;
+      --button-bg: #007bff;
+      --button-hover-bg: #0056b3;
+      --button-text: #ffffff;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -78,7 +81,29 @@
     }
 
     .tab {
-      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .tab button {
+      background-color: var(--button-bg);
+      color: var(--button-text);
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .tab button:hover {
+      background-color: var(--button-hover-bg);
+    }
+
+    .tab button.active {
+      background-color: var(--button-hover-bg);
+      font-weight: bold;
     }
 
     .tab-content {
@@ -93,8 +118,8 @@
 <body>
   <h1>⚡ Strom-Dashboard</h1>
   <div class="tab">
-    <button onclick="showTab('dashboard')">Dashboard</button>
-    <button onclick="showTab('tagesdaten')">Tagesdaten</button>
+    <button id="dashboard-tab" class="active" onclick="showTab('dashboard', this)">Dashboard</button>
+    <button id="tagesdaten-tab" onclick="showTab('tagesdaten', this)">Tagesdaten</button>
   </div>
 
   <!-- Dashboard Tab -->
@@ -324,11 +349,16 @@
       }
     }
 
-    function showTab(tabId) {
+    function showTab(tabId, button) {
       document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
       });
       document.getElementById(tabId).classList.add('active');
+
+      document.querySelectorAll('.tab button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      button.classList.add('active');
     }
 
     // Daten beim Laden der Seite abrufen
