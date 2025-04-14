@@ -373,8 +373,8 @@ while True:
                 except Exception as e:
                     logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
                     continue  # Überspringt den aktuellen Zyklus und setzt die Schleife fort
-            # Wartezeitpunkt aktualisieren
-            last_json_write = current_time             
+                # Wartezeitpunkt aktualisieren
+                last_json_write = current_time             
             else:
                 logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
                  
