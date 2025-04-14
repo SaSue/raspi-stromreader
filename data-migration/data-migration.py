@@ -10,7 +10,7 @@ DB_DATEI = "/app/data/strom.sqlite"
 conn = sqlite3.connect(DB_DATEI)
 cursor = conn.cursor()
 
-
+zaehler_id = 1  # ID des Zählers    
 
 # JSON-Datei einlesen
 with open(JSON_DATEI, "r", encoding="utf-8") as f:
