@@ -1,6 +1,6 @@
 services:
 
-  strom-raw-dump:
+  strom-reader:
     build: ./reader
     container_name: strom-reader
     devices:
@@ -20,7 +20,6 @@ services:
       - "8080:80"
     volumes:
       - /var/www/html:/var/www/localhost/htdocs:ro
-
   dashboard-backend:
     build: ./dashboard-backend
     container_name: strom-dashboard-backend
