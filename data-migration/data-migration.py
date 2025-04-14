@@ -1,26 +1,31 @@
 import json
 import sqlite3
 from datetime import datetime
+from pathlib import Path
 
 # Datei-Pfade
 JSON_DATEI = "/app/data/history/2025-04-09.json"
 DB_DATEI = "/app/data/strom.sqlite"
 
-# Datenbankverbindung und Tabelle vorbereiten
+# Datenbankverbindung und Cursor erstellen
 conn = sqlite3.connect(DB_DATEI)
 cursor = conn.cursor()
 
-# JSON-Datei einlesen
+# JSON-Datei laden
 with open(JSON_DATEI, "r", encoding="utf-8") as f:
     daten = json.load(f)
 
-zaehler_id = 1  # Zähler-ID, anpassen je nach Bedarf, der Einfachheit halber fix
+zaehler_id = 1  # Zähler-ID (anpassen falls mehrere Zähler vorhanden)
 
-# Daten einfügen
-for i, eintrag in enumerate(daten):  # Verwende enumerate, um den Index automatisch zu zählen
-    # Messwert einfügen
-    print(f"Schleifendurchlauf {i} Messwert: {eintrag}")
-    cursor.execute("""
+# Zähler für erfolgreiche Inserts
+anzahl_erfolgreich = 0
+
+# Alle Einträge einfügen
+for i, eintrag in enumerate(daten):
+    try:
+        print(f"🔁 Durchlauf {i} - Eintrag: {eintrag}")
+
+        cursor.execute("""
             INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
             VALUES (?, ?, ?, ?, ?)
         """, (
@@ -30,10 +35,15 @@ for i, eintrag in enumerate(daten):  # Verwende enumerate, um den Index automati
             eintrag["einspeisung"],
             eintrag["leistung"]
         ))
-    print(f"📊 Messwert in SQLite gespeichert: {eintrag}")
+
+        anzahl_erfolgreich += 1
+        print(f"✅ Gespeichert [{anzahl_erfolgreich}]: {eintrag['timestamp']}")
+
+    except Exception as e:
+        print(f"❌ Fehler bei Eintrag {i}: {e}")
 
 # Änderungen speichern und Verbindung schließen
 conn.commit()
 conn.close()
 
-print("Daten erfolgreich in SQLite übertragen.")
+print(f"✅ Fertig. {anzahl_erfolgreich} Messwerte erfolgreich in die Datenbank übernommen.")
