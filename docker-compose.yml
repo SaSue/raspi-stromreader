@@ -15,15 +15,15 @@ services:
     
   strom-dashboard:
     build: ./lighttpd
-    container_name: strom-dashboard
+    container_name: strom-dashboard-frontend
     ports:
       - "8080:80"
     volumes:
       - /var/www/html:/var/www/localhost/htdocs:ro
 
   dashboard-backend:
-    build: ./dashboard-backend.py
-    container_name: strom-dashboard
+    build: ./dashboard-backend
+    container_name: strom-dashboard-backend
     ports:
       - "5000:5000"
     volumes:
