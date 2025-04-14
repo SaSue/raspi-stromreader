@@ -12,7 +12,9 @@ services:
       - DEBUG=0
     restart: unless-stopped
     tty: true
-    
+    networks:
+      - strom-network
+
   strom-dashboard:
     build: ./lighttpd
     container_name: strom-dashboard-frontend
@@ -20,6 +22,9 @@ services:
       - "8080:80"
     volumes:
       - /var/www/html:/var/www/localhost/htdocs:ro
+    networks:
+      - strom-network
+
   dashboard-backend:
     build: ./dashboard-backend
     container_name: strom-dashboard-backend
@@ -27,3 +32,9 @@ services:
       - "5000:5000"
     volumes:
       - /var/www/html/strom.sqlite:/app/data/strom.sqlite
+    networks:
+      - strom-network
+
+networks:
+  strom-network:
+    driver: bridge
