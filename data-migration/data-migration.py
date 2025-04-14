@@ -25,12 +25,12 @@ for i, eintrag in enumerate(daten):  # Verwende enumerate, um den Index automati
             VALUES (?, ?, ?, ?, ?)
         """, (
             zaehler_id,
-            timestamps[i],
-            bezug[i],
-            einspeisung[i],
-            leistung[i]
+            eintrag[timestamp],
+            eintrag[bezug],
+            eintrga[einspeisung],
+            eintrag[leistung]
         ))
-    print(f"📊 Messwert in SQLite gespeichert: {timestamps[i]}")
+    print(f"📊 Messwert in SQLite gespeichert: {eintrag}")
 
 # Änderungen speichern und Verbindung schließen
 conn.commit()
