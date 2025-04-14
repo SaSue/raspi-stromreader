@@ -7,7 +7,7 @@ import crcmod
 import argparse
 import os
 import json
-import logging
+import sqlite3
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from datetime import datetime
@@ -16,6 +16,38 @@ from datetime import datetime
 OUTPUT_PATH = Path("/app/data")
 HISTORY_PATH = OUTPUT_PATH / "history"
 HISTORY_PATH.mkdir(parents=True, exist_ok=True)
+
+# SQLite-Datei definieren
+DB_PATH = Path("/app/data/strom.sqlite")
+
+# Sicherstellen, dass die Datenbank existiert
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+conn = sqlite3.connect(DB_PATH)
+c = conn.cursor()
+
+# Tabellen erstellen, falls sie nicht existieren
+c.execute("""
+CREATE TABLE IF NOT EXISTS zaehler (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    seriennummer TEXT UNIQUE,
+    hersteller TEXT,
+    name TEXT
+)
+""")
+
+c.execute("""
+CREATE TABLE IF NOT EXISTS messwerte (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    zaehler_id INTEGER,
+    timestamp TEXT,
+    bezug_kwh REAL,
+    einspeisung_kwh REAL,
+    wirkleistung_watt REAL,
+    FOREIGN KEY (zaehler_id) REFERENCES zaehler(id)
+)
+""")
+conn.commit()
+conn.close()
 
 # Zeitkontrolle für JSON-Speicherung
 last_json_write = 0
@@ -28,17 +60,46 @@ class Messwert:
         self.obis = obis
         
 class Zaehler:
-    def __init__(self, vendor, sn):
+    def __init__(self, vendor, sn, leistung, bezug, einspeisung):
         self.vendor = vendor
         self.sn = sn
+        self.leistung = leistung
+        self.bezug = bezug
+        self.einspeisung = einspeisung
 
 class OBIS_Object:
-    def __init__(self, code, start, offset, laenge):
+    def __init__(self, code, start):
         self.code = code
         self.start = start
-        self.offset = offset
-        self.laenge = laenge
-        
+
+# Funktion: Werte speichern
+def save_to_sqlite(seriennummer, hersteller, bezug_kwh, einspeisung_kwh, wirkleistung_watt):
+    conn = sqlite3.connect(DB_PATH)
+    c = conn.cursor()
+
+    # Zähler-ID abrufen oder einfügen
+    c.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (seriennummer,))
+    row = c.fetchone()
+    if row:
+        zaehler_id = row[0]
+        logging.debug("🔍 Zähler-ID gefunden: %s", zaehler_id)
+    else:
+        c.execute("INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)", (seriennummer, hersteller))
+        zaehler_id = c.lastrowid
+        logging.debug("💾 Neuer Zähler in SQLite gespeichert: %s", (seriennummer, hersteller))
+
+    # Messwert einfügen
+    timestamp = datetime.now().isoformat()
+    c.execute("""
+        INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
+        VALUES (?, ?, ?, ?, ?)
+    """, (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt))
+
+    conn.commit()
+    conn.close()
+    logging.debug("💾 Messwerte in SQLite gespeichert: %s", (seriennummer, bezug_kwh, einspeisung_kwh, wirkleistung_watt))
+
+
 def decode_manufacturer(hex_string):
     """
     Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
@@ -85,14 +146,44 @@ def crc_check(crc_raw,sml_telegram):
         return False
         
 def wert_suchen(sml_telegram,idx_position,idx_offset,idx_len):
-    return (sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len].hex())
-                            
-#obis kennungen
-bezug_kennung = b"\x07\x01\x00\x01\x08\x00\xff"
-einspeisung_kennung = b"\x07\x01\x00\x02\x08\x00\xff"
-wirk_kennung = b"\x07\x01\x00\x10\x07\x00\xff"
+    return sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len]
 
-#sml kennzeichen
+def skalieren(wert, skala):
+    """
+    Skaliert den Wert mit dem angegebenen Skalenfaktor.
+    """
+    if skala == 0:
+        return wert
+    else:
+        return wert * (10 ** skala)
+
+def einheit_suchen(einheit_raw):
+    if einheit_raw == b"\x62\x1e":  # Wh
+        return "Wh"
+    elif einheit_raw == b"\x62\x1b":  # W
+        return "W"
+    else:
+        logging.warning("⚠️ Unbekannte Einheit: %s", einheit_raw.hex())
+        return "unbekannte Einheit"
+
+def convert_wh_to_kwh(value, unit):
+    """
+    Konvertiert einen Wert von Wh in kWh und passt die Einheit an.
+
+    :param value: Der Wert in Wh (int oder float).
+    :param unit: Die Einheit als String (z. B. "Wh").
+    :return: Tuple (converted_value, converted_unit)
+    """
+    if unit == "Wh":
+        converted_value = value / 1000  # Umrechnung in kWh
+        converted_unit = "kWh"         # Einheit anpassen
+    else:
+        converted_value = value        # Keine Umrechnung, wenn Einheit nicht "Wh" ist
+        converted_unit = unit          # Einheit bleibt unverändert
+
+    return converted_value, converted_unit
+
+#sml Ende kennzeichen
 sml_ende = b"\x1b\x1b\x1b\x1a"
 
 parser = argparse.ArgumentParser()
@@ -118,7 +209,12 @@ BAUDRATE = 9600
 
 logging.debug("🔌 Verbinde mit %s @ %d Baud", PORT, BAUDRATE)
 
-ser = serial.Serial(PORT, BAUDRATE, timeout=1)
+try:
+    ser = serial.Serial(PORT, BAUDRATE, timeout=1)
+    logging.debug("🔌 Verbindung erfolgreich hergestellt.")
+except serial.SerialException as e:
+    logging.error("❌ Fehler beim Öffnen des seriellen Ports: %s", e)
+    exit(1)
 
 buffer = b""
 while True:
@@ -136,7 +232,6 @@ while True:
         # Lies genau 3 weitere Bytes (CRC + Füllbyte)
         while len(buffer) < idx + 4 + 3:
             buffer += ser.read(1)
-        # sml_komplett = buffer[:idx + 7] 
         logging.debug("🔢 komplettes Telegram: %s", buffer[:idx + 7].hex())
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
 
@@ -144,164 +239,83 @@ while True:
         logging.debug("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
         
         #prüfen ob crc passt
-        if crc_check(buffer[idx + 5:idx + 7],sml_data) == True:   
+        if crc_check(buffer[idx + 5:idx + 7], sml_data) == True:   
+            
             logging.debug("Verarbeitung SML Telegram starten!")
-            # HErsteller suchen 07010060320101
-            # Seriennummer suchen 01 00 60 01 00 FF 
-            
-            vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0,11,4)
+            # Zaehler initialisieren
+            mein_zaehler = Zaehler(None, None, None, None, None)
+
+            # Herstellerkennung und Seriennummer suchen
+            # 07 01 00 60 32 01 01
+            # 07 01 00 60 01 00 FF
+            vendor_obis = OBIS_Object(b"\x07\x01\x00\x60\x32\x01\x01",0)
             vendor_obis.start = sml_data.find(vendor_obis.code)
-            sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0,11,11)
+            if vendor_obis.start == -1:
+                logging.error("❌ OBIS-Code für Hersteller nicht gefunden.")
+                continue  # Überspringt die Verarbeitung dieses Telegramms
+            # Hersteller offset 11, laenge 4
+            mein_zaehler.vendor = decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,11,4).hex())
+
+            sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0)
             sn_obis.start = sml_data.find(sn_obis.code)
+            if sn_obis.start == -1:
+                logging.error("❌ OBIS-Code für Seriennummer nicht gefunden.")
+                continue
+            # Seriennummer offset 11, laenge 11
+            mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,11,11).hex())
             
-            mein_zaehler = Zaehler(decode_manufacturer(wert_suchen(sml_data,vendor_obis.start,vendor_obis.offset,vendor_obis.laenge)),parse_device_id(wert_suchen(sml_data,sn_obis.start,sn_obis.offset,sn_obis.laenge)) )
             logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
-            vendor_kennung = b"\x07\x01\x00\x60\x32\x01\x01"
-            idx_vendor = sml_data.find(vendor_kennung)
+            # Bezug gesamt suchen 07 01 00 01 08 00 ff
+            bezug_obis = OBIS_Object(b"\x07\x01\x00\x01\x08\x00\xff",0)
+            bezug_obis.start = sml_data.find(bezug_obis.code)
+            if bezug_obis.start == -1:  
+                logging.error("❌ OBIS-Code für Bezug nicht gefunden.")
+                continue
+            bezug = Messwert(None,None,bezug_obis.code) 
             
-            idx_vendor_offset = 11
-            logging.debug("Hersteller %s an Stelle %s", vendor_kennung.hex(), idx_vendor)
-            
-            sn_kennung = b"\x07\x01\x00\x60\x01\x00\xff"
-            idx_sn = sml_data.find(sn_kennung)
-            idx_sn_offset = 11
-            idx_sn_len = 4
-            logging.debug("SN %s an Stelle %s", sn_kennung.hex(), idx_sn)
-            
-            
-            
-        
-            if idx_vendor > 1:
-                vendor_str = decode_manufacturer((sml_data[idx_vendor + idx_vendor_offset:idx_vendor + idx_vendor_offset + 4]).hex())
-            else:
-                vendor_str = "unbekannter Hersteller"
-            logging.debug("Vendor %s", vendor_str)
-            
-          
-            
+            bezug.wert = skalieren(
+                int(wert_suchen(sml_data,bezug_obis.start,24,8).hex(),16), # Wert Offset 24, laenge 8
+                int.from_bytes(wert_suchen(sml_data,bezug_obis.start,22,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
+             ) 
 
-            
-            
-            
-            
-            if idx_sn > 1:
-                sn_string = parse_device_id((sml_data[idx_sn + idx_sn_offset:idx_sn + idx_sn_offset + 11]).hex())
-            else:
-                sn_string = "unbekannte Gerätekennung"
-            
-            logging.debug("SN %s", sn_string)
-              
-            # Bezug gesamt suchen
-            logging.debug(" ")
-            logging.debug("*** Bezug ****")
-            idx_bezug = 0
-            idx_bezug = sml_data.find(bezug_kennung)           
-            logging.debug("Bezug %s an Stelle %s", bezug_kennung.hex(), idx_bezug)
-        
-            if idx_bezug > 0:
-            
-                #Scale Faktor raussuchen
-                idx_bezug_scale_offset = 22 # offset für die Skala
-                bezug_scale = sml_data[idx_bezug + idx_bezug_scale_offset:idx_bezug + idx_bezug_scale_offset + 1]     # 1 Byte für den Scale raussuchen
-                bezug_scale_int = pow(10, int.from_bytes(bezug_scale, byteorder="big", signed=True)) # potenz den scale errechnen
-                logging.debug("Faktor %s = %s", bezug_scale.hex(), bezug_scale_int)
-                
-                # Bezug errechnen
-                idx_bezug_value_offset = 24 # offset für den wer
-                bezug_value = sml_data[idx_bezug + idx_bezug_value_offset:idx_bezug + idx_bezug_value_offset + 8]     # 9 Byte für den Wert
-                bezug_value_int = int(bezug_value.hex(), 16) * bezug_scale_int # potenz den scale errechnen
-                logging.debug("Bezugswert %s = %s", bezug_value.hex(), bezug_value_int)
-                
-                #Einheit raussuchen
-                idx_bezug_unit_offset = 19 # offset für die Einheit
-                bezug_unit = sml_data[idx_bezug + idx_bezug_unit_offset:idx_bezug + idx_bezug_unit_offset + 2]   # 2 Byte raussuchen
-                if bezug_unit == b"\x62\x1e": # schauen ob Wh
-                    logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), "Wh")
-                    bezug_unit_string = "kWh" # ich will aber kWh
-                    bezug_kvalue_int = bezug_value_int / 1000 # und den Wert rechnen wir um
-                else: # ansonten unbekannt
-                    bezug_unit_string = "unbekannte Einheit"
-                    logging.debug("Bezugeinheit %s = %s", bezug_unit.hex(), bezug_unit_string)
-                    bezug_kvalue_int = bezug_value_int 
-                
-                logging.debug("Der Bezug beträgt %s %s",bezug_kvalue_int, bezug_unit_string)
-             
-            else:
-                bezug_unit_string = "kein Bezug"
-                bezug_kvalue_int = 0
-                
+            bezug.einheit = einheit_suchen(wert_suchen(sml_data,bezug_obis.start,19,2)) # Einheit Offset 19, laenge 2
+            mein_zaehler.bezug = Messwert(None,None,bezug_obis.code)
+            mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit = convert_wh_to_kwh(bezug.wert, bezug.einheit)  #in kWh umrechnen    
+            logging.debug("Bezug %s = %s %s", bezug_obis.code.hex(), mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit)
+                    
             # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
-            logging.debug(" ")
-            logging.debug("*** Einspeisung ****")
-            idx_einspeisung = 0
-            idx_einspeisung = sml_data.find(einspeisung_kennung)
+            einspeisung_obis = OBIS_Object(b"\x07\x01\x00\x02\x08\x00\xff",0)
+            einspeisung_obis.start = sml_data.find(einspeisung_obis.code)
+            if einspeisung_obis.start == -1:
+                logging.error("❌ OBIS-Code für Einspeisung nicht gefunden.")
+                continue   
+            einspeisung = Messwert(None,None,einspeisung_obis.code)
             
-            logging.debug("Einspeisung %s an Stelle %s",einspeisung_kennung.hex(), idx_einspeisung)
-
-            if idx_einspeisung > 0:
-                
-                #Scale Faktor raussuchen
-                idx_einspeisung_scale_offset = 19 # offset für die Skala
-                einspeisung_scale = sml_data[idx_einspeisung + idx_einspeisung_scale_offset:idx_einspeisung + idx_einspeisung_scale_offset + 1]     # 1 Byte für den Scale raussuchen
-                einspeisung_scale_int = pow(10, int.from_bytes(einspeisung_scale, byteorder="big", signed=True)) # potenz den scale errechnen
-                logging.debug("Faktor %s = %s", einspeisung_scale.hex(), einspeisung_scale_int)
-                
-                # Bezug errechnen
-                idx_einspeisung_value_offset = 21 # offset für den wer
-                einspeisung_value = sml_data[idx_einspeisung + idx_einspeisung_value_offset:idx_einspeisung + idx_einspeisung_value_offset + 8]     # 9 Byte für den Wert
-                einspeisung_value_int = int(einspeisung_value.hex(), 16) * einspeisung_scale_int # potenz den scale errechnen
-                logging.debug("Einspeisewert %s = %s", einspeisung_value.hex(), einspeisung_value_int)
-                
-                #Einheit raussuchen
-                idx_einspeisung_unit_offset = 16 # offset für die Einheit
-                einspeisung_unit = sml_data[idx_einspeisung + idx_einspeisung_unit_offset:idx_einspeisung + idx_einspeisung_unit_offset + 2]   # 2 Byte raussuchen
-                if einspeisung_unit == b"\x62\x1e": # schauen ob Wh
-                    logging.debug("Einspeiseeinheit %s = %s", einspeisung_unit.hex(), "Wh")
-                    einspeisung_unit_string = "kWh" # ich will aber kWh
-                    einspeisung_kvalue_int = einspeisung_value_int / 1000 # und den Wert rechnen wir um
-                else: # ansonten unbekannt
-                    einspeisung_unit_string = "unbekannte Einheit"
-                    logging.debug("Einspeiseinheit %s = %s", einspeisung_unit.hex(), einspeisung_unit_string)
-                    einspeisung_kvalue_int = einspeisung_value_int 
-                
-                logging.debug("Die Einspeisung beträgt %s %s",einspeisung_kvalue_int, einspeisung_unit_string)
-            else:
-                einspeisung_unit_string = "keine Einspeisung"
-                einspeisung_kvalue_int = 0
+            einspeisung.wert = skalieren(
+                int(wert_suchen(sml_data,einspeisung_obis.start,21,8).hex(),16), # Wert Offset 24, laenge 8
+                int.from_bytes(wert_suchen(sml_data,einspeisung_obis.start,19,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
+             )
+            einspeisung.einheit = einheit_suchen(wert_suchen(sml_data,einspeisung_obis.start,16,2)) # Einheit Offset 19, laenge 2
+            mein_zaehler.einspeisung = Messwert(None,None,einspeisung_obis.code)
+            mein_zaehler.einspeisung.wert, mein_zaehler.einspeisung.einheit = convert_wh_to_kwh(einspeisung.wert, einspeisung.einheit)
+            logging.debug("Einspeisung %s = %s %s", einspeisung_obis.code.hex(), mein_zaehler.einspeisung.wert, mein_zaehler.einspeisung.einheit)
 
             # Wirkleistung gesamt suchen 07 01 00 10 07 00 ff
-            logging.debug(" ")
-            logging.debug("*** Wirkleistung aktuell ****")
-            idx_wirk = 0
-            idx_wirk = sml_data.find(wirk_kennung)   
-            logging.debug("Wirkleistung %s an Stelle %s", wirk_kennung.hex(), idx_wirk)  
-
-            if idx_wirk > 0:
+            wirk_obis = OBIS_Object(b"\x07\x01\x00\x10\x07\x00\xff",0) 
+            wirk_obis.start = sml_data.find(wirk_obis.code)
+            if wirk_obis.start == -1:
+                logging.error("❌ OBIS-Code für Wirkleistung nicht gefunden.")
+                continue
+            wirk = Messwert(None,None,wirk_obis.code)
+            wirk.wert = skalieren(
+                int(wert_suchen(sml_data,wirk_obis.start,21,4).hex(),16), # Wert Offset 21, laenge 4
+                int.from_bytes(wert_suchen(sml_data,wirk_obis.start,19,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
+             )
+            wirk.einheit = einheit_suchen(wert_suchen(sml_data,wirk_obis.start,16,2)) # Einheit Offset 16, laenge 2
+            mein_zaehler.leistung = Messwert(wirk.wert,wirk.einheit,wirk_obis.code)
+            logging.debug("Wirkleistung %s = %s %s", wirk_obis.code.hex(), mein_zaehler.leistung.wert, mein_zaehler.leistung.einheit)
             
-                #Scale Faktor raussuchen
-                idx_wirk_scale_offset = 19 # offset für die Skala
-                wirk_scale = sml_data[idx_wirk + idx_wirk_scale_offset:idx_wirk + idx_wirk_scale_offset + 1]     # 1 Byte für den Scale raussuchen
-                wirk_scale_int = pow(10, int.from_bytes(wirk_scale, byteorder="big", signed=True)) # potenz den scale errechnen
-                logging.debug("Faktor %s = %s", wirk_scale.hex(), wirk_scale_int)
-                
-                # Wirk errechnen
-                idx_wirk_value_offset = 21 # offset für den wert
-                wirk_value = sml_data[idx_wirk + idx_wirk_value_offset:idx_wirk + idx_wirk_value_offset + 4]     # 9 Byte für den Wert
-                wirk_value_int = int(wirk_value.hex(), 16) * wirk_scale_int # potenz den scale errechnen
-                logging.debug("Wirkwert %s = %s", wirk_value.hex(), wirk_value_int)
-                
-                #Einheit raussuchen
-                idx_wirk_unit_offset = 16 # offset für die Einheit
-                wirk_unit = sml_data[idx_wirk + idx_wirk_unit_offset:idx_wirk + idx_wirk_unit_offset + 2]   # 2 Byte raussuchen
-                if wirk_unit == b"\x62\x1b": # schauen ob W
-                    wirk_unit_string = "W" # ich will aber kWh
-                else: # ansonten unbekannt
-                    wirk_unit_string = "unbekannte Einheit"
-                logging.debug("Wirkeinheit %s = %s", wirk_unit.hex(), wirk_unit_string )
-                
-                logging.debug("Die aktuelle Wirkleistung beträgt %s %s",wirk_value_int, wirk_unit_string)
-                
             current_time = time.time()
             if current_time - last_json_write >= wait_time:
                 now = datetime.now(ZoneInfo("Europe/Berlin"))
@@ -309,14 +323,32 @@ while True:
                 date_str = now.strftime("%Y-%m-%d")
     
                 output_data = {
-                    "leistung": wirk_value_int, 
-                    "bezug": bezug_kvalue_int,
-                    "einspeisung": einspeisung_kvalue_int,
-                    "seriennummer": sn_string,
+                    "leistung": mein_zaehler.leistung.wert,
+                    "leistung_einheit": mein_zaehler.leistung.einheit, 
+                    "bezug": mein_zaehler.bezug.wert,
+                    "bezug_einheit": mein_zaehler.bezug.einheit,
+                    "einspeisung": mein_zaehler.einspeisung.wert, 
+                    "einspeisung_einheit": mein_zaehler.einspeisung.einheit,
+                    "seriennummer": mein_zaehler.sn,
                     "timestamp": timestamp,
-                    "zaehlername": vendor_str
+                    "zaehlername": mein_zaehler.vendor
                 }
                 
+                # SQLite-Daten speichern
+                try:
+                    save_to_sqlite(
+                        mein_zaehler.sn,
+                        mein_zaehler.vendor,
+                        mein_zaehler.bezug.wert,
+                        mein_zaehler.einspeisung.wert,
+                        mein_zaehler.leistung.wert
+                    )
+                    logging.debug("💾 Daten in SQLite gespeichert")   
+                except Exception as e:
+                    logging.error("❌ Fehler beim Speichern in SQLite: %s", e)
+                
+                """
+                # JSON-Daten speichern  
                 try:
                     # Aktuelle Datei speichern
                     with open(OUTPUT_PATH / "strom.json", "w") as f:
@@ -337,15 +369,22 @@ while True:
                     with open(history_file, "w") as f:
                         json.dump(history_data, f, indent=2)
 
-                    last_json_write = current_time
                     
                 except Exception as e:
                     logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
-                    
+                """
+                last_json_write = current_time             
+            else:
+                logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
+                 
         else: 
             crc_check_sml = False
             logging.debug("Kein gültiges Telegram zum verarbeiten")    
         
         # Buffer bereinigen
-        buffer = buffer[idx + 7:]
-        
+        if idx + 7 <= len(buffer):
+            buffer = buffer[idx + 7:]
+        else:
+            buffer = b""
+
+        logging.debug("🔄 Buffer zurückgesetzt")       

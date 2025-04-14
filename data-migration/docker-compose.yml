@@ -1,0 +1,10 @@
+services:
+
+  strom-reader-migration:
+    build: .
+    container_name: strom-reader-migration
+
+    volumes:
+      - ./logs:/app/logs
+      - /var/www/html:/app/data
+    restart: none
