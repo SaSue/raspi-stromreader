@@ -186,6 +186,8 @@
 
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    let tagesverlaufChart; // Variable für das Tagesverlauf-Diagramm
+
     function formatDatum(date) {
       return date.toISOString().split("T")[0];
     }
@@ -352,7 +354,14 @@
         const werte = data.verlauf.map(e => e.leistung);
 
         const ctx = document.getElementById('tagesverlauf').getContext('2d');
-        new Chart(ctx, {
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (tagesverlaufChart) {
+          tagesverlaufChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        tagesverlaufChart = new Chart(ctx, {
           type: 'line',
           data: {
             labels,
@@ -363,7 +372,13 @@
               fill: false
             }]
           },
-          options: { scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 10 } } } }
+          options: {
+            scales: {
+              x: {
+                ticks: { autoSkip: true, maxTicksLimit: 10 }
+              }
+            }
+          }
         });
       } catch (error) {
         console.error('Fehler beim Abrufen der Tagesdaten:', error);
