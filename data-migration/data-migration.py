@@ -20,7 +20,13 @@ anzahl_fehler = 0
 
 for i, eintrag in enumerate(daten):
     try:
+        # Prüfung auf fehlende Felder
+        for key in ("timestamp", "bezug", "einspeisung", "leistung"):
+            if key not in eintrag or eintrag[key] is None:
+                raise ValueError(f"Feld '{key}' fehlt oder ist None")
+
         print(f"🔁 Durchlauf {i} - Eintrag: {eintrag}")
+        print("⚙️ Einfügedaten:", eintrag["timestamp"], eintrag["bezug"], eintrag["einspeisung"], eintrag["leistung"])
         cursor.execute("""
             INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
             VALUES (?, ?, ?, ?, ?)
