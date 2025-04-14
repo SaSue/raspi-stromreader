@@ -135,9 +135,11 @@
     }
 
     function aktualisiereAnzeige(aktuell) {
-      document.getElementById("leistung").textContent = `${aktuell.leistung} W`;
-      document.getElementById("bezug").textContent = `${aktuell.bezug.toFixed(2)} kWh`;
-      document.getElementById("einspeisung").textContent = `${aktuell.einspeisung.toFixed(2)} kWh`;
+      document.getElementById("leistung").textContent = `${aktuell.leistung || '--'} W`;
+      document.getElementById("bezug").textContent = `${(aktuell.bezug || 0).toFixed(2)} kWh`;
+      document.getElementById("einspeisung").textContent = `${(aktuell.einspeisung || 0).toFixed(2)} kWh`;
+      document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
+      document.getElementById("verbrauchGestern").textContent = `${(aktuell.verbrauchGestern || 0).toFixed(2)} kWh`;
     }
 
     function renderGauge(wert) {
@@ -162,6 +164,10 @@
     }
 
     function renderVerlauf(daten) {
+      if (!daten || daten.length === 0) {
+        console.error('Keine Daten für den Tagesverlauf verfügbar.');
+        return;
+      }
       const labels = daten.map(e => new Date(e.timestamp).toLocaleTimeString());
       const werte = daten.map(e => e.leistung);
       new Chart(document.getElementById("verlauf"), {

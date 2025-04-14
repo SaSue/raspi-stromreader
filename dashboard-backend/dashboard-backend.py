@@ -131,7 +131,7 @@ def get_tagesverlauf():
         """).fetchall()
 
         # Daten in ein JSON-kompatibles Format umwandeln
-        verlauf_data = [{"timestamp": row["timestamp"], "bezug": row["wirkleistung_watt"]} for row in verlauf]
+        verlauf_data = [{"timestamp": row["timestamp"], "leistung": row["wirkleistung_watt"]} for row in verlauf]
         logger.debug("📊 Tagesverlauf-Daten in Watt: %s", verlauf_data)
         return jsonify(verlauf_data)
 
