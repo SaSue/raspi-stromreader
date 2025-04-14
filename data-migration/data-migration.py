@@ -5,7 +5,7 @@ from datetime import datetime
 
 # Datei-Pfade
 JSON_DATEI = "/app/data/history/2025-04-09.json"
-DB_DATEI = "strom.sqlite"
+DB_DATEI = "/app/data/strom.sqlite"
 
 # Datenbankverbindung und Tabelle vorbereiten
 conn = sqlite3.connect(DB_DATEI)
