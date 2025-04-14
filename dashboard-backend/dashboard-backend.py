@@ -31,21 +31,108 @@ def get_dashboard_data():
         logger.debug("🔍 Abfrage: Aktuelle Leistung")
         leistung = cursor.execute("SELECT wirkleistung_watt FROM messwerte ORDER BY timestamp DESC LIMIT 1").fetchone()
         logger.debug("🔍 Abfrage: Tagesbezug")
-        bezug = cursor.execute("SELECT SUM(bezug_kwh) FROM messwerte WHERE DATE(timestamp) = DATE('now')").fetchone()
+
+        # Ersten und letzten Wert des Tages abrufen
+        bezug_start = cursor.execute("""
+            SELECT bezug_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now') 
+            ORDER BY timestamp ASC LIMIT 1
+        """).fetchone()
+
+        bezug_end = cursor.execute("""
+            SELECT bezug_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now') 
+            ORDER BY timestamp DESC LIMIT 1
+        """).fetchone()
+
+        # Differenz berechnen, falls beide Werte vorhanden sind
+        if bezug_start and bezug_end:
+            bezug = bezug_end["bezug_kwh"] - bezug_start["bezug_kwh"]
+            logger.debug("📊 Tagesbezug berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
+                         bezug_start["bezug_kwh"], bezug_end["bezug_kwh"], bezug)
+        else:
+            bezug = 0
+            logger.debug("⚠️ Kein Tagesbezug berechnet, da nicht genügend Daten vorhanden sind.")
+
         logger.debug("🔍 Abfrage: Tageseinspeisung")
-        einspeisung = cursor.execute("SELECT SUM(einspeisung_kwh) FROM messwerte WHERE DATE(timestamp) = DATE('now')").fetchone()
+
+        # Ersten und letzten Wert der Einspeisung des Tages abrufen
+        einspeisung_start = cursor.execute("""
+            SELECT einspeisung_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now') 
+            ORDER BY timestamp ASC LIMIT 1
+        """).fetchone()
+
+        einspeisung_end = cursor.execute("""
+            SELECT einspeisung_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now') 
+            ORDER BY timestamp DESC LIMIT 1
+        """).fetchone()
+
+        # Differenz berechnen, falls beide Werte vorhanden sind
+        if einspeisung_start and einspeisung_end:
+            einspeisung = einspeisung_end["einspeisung_kwh"] - einspeisung_start["einspeisung_kwh"]
+            logger.debug("📊 Tageseinspeisung berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
+                         einspeisung_start["einspeisung_kwh"], einspeisung_end["einspeisung_kwh"], einspeisung)
+        else:
+            einspeisung = 0
+            logger.debug("⚠️ Keine Tageseinspeisung berechnet, da nicht genügend Daten vorhanden sind.")
+
         logger.debug("🔍 Abfrage: Verbrauch heute")
-        verbrauch_heute = cursor.execute("SELECT SUM(bezug_kwh) FROM messwerte WHERE DATE(timestamp) = DATE('now')").fetchone()
+
+        # Ersten und letzten Wert des heutigen Tages abrufen
+        verbrauch_heute_start = cursor.execute("""
+            SELECT bezug_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now') 
+            ORDER BY timestamp ASC LIMIT 1
+        """).fetchone()
+
+        verbrauch_heute_end = cursor.execute("""
+            SELECT bezug_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now') 
+            ORDER BY timestamp DESC LIMIT 1
+        """).fetchone()
+
+        # Differenz berechnen, falls beide Werte vorhanden sind
+        if verbrauch_heute_start and verbrauch_heute_end:
+            verbrauch_heute = verbrauch_heute_end["bezug_kwh"] - verbrauch_heute_start["bezug_kwh"]
+            logger.debug("📊 Verbrauch heute berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
+                         verbrauch_heute_start["bezug_kwh"], verbrauch_heute_end["bezug_kwh"], verbrauch_heute)
+        else:
+            verbrauch_heute = 0
+            logger.debug("⚠️ Kein Verbrauch heute berechnet, da nicht genügend Daten vorhanden sind.")
+
         logger.debug("🔍 Abfrage: Verbrauch gestern")
-        verbrauch_gestern = cursor.execute("SELECT SUM(bezug_kwh) FROM messwerte WHERE DATE(timestamp) = DATE('now', '-1 day')").fetchone()
+
+        # Ersten und letzten Wert des gestrigen Tages abrufen
+        verbrauch_gestern_start = cursor.execute("""
+            SELECT bezug_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now', '-1 day') 
+            ORDER BY timestamp ASC LIMIT 1
+        """).fetchone()
+
+        verbrauch_gestern_end = cursor.execute("""
+            SELECT bezug_kwh FROM messwerte 
+            WHERE DATE(timestamp) = DATE('now', '-1 day') 
+            ORDER BY timestamp DESC LIMIT 1
+        """).fetchone()
+
+        # Differenz berechnen, falls beide Werte vorhanden sind
+        if verbrauch_gestern_start and verbrauch_gestern_end:
+            verbrauch_gestern = verbrauch_gestern_end["bezug_kwh"] - verbrauch_gestern_start["bezug_kwh"]
+            logger.debug("📊 Verbrauch gestern berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
+                         verbrauch_gestern_start["bezug_kwh"], verbrauch_gestern_end["bezug_kwh"], verbrauch_gestern)
+        else:
+            verbrauch_gestern = 0
+            logger.debug("⚠️ Kein Verbrauch gestern berechnet, da nicht genügend Daten vorhanden sind.")
 
         # Daten als JSON zurückgeben
         response = {
             "leistung": leistung["wirkleistung_watt"] if leistung else 0,
-            "bezug": bezug["SUM(bezug_kwh)"] if bezug else 0,
-            "einspeisung": einspeisung["SUM(einspeisung_kwh)"] if einspeisung else 0,
-            "verbrauchHeute": verbrauch_heute["SUM(bezug_kwh)"] if verbrauch_heute else 0,
-            "verbrauchGestern": verbrauch_gestern["SUM(bezug_kwh)"] if verbrauch_gestern else 0
+            "bezug": bezug,
+            "einspeisung": einspeisung,
+            "verbrauchHeute": verbrauch_heute,
+            "verbrauchGestern": verbrauch_gestern
         }
         logger.debug("📤 API-Antwort: %s", response)
         return jsonify(response)
