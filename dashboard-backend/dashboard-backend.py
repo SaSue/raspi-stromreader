@@ -132,7 +132,7 @@ def get_tagesverlauf():
 
         # Daten in ein JSON-kompatibles Format umwandeln
         verlauf_data = [{"timestamp": row["timestamp"], "bezug": row["leistung_watt"]} for row in verlauf]
-        logger.debug("📊 Tagesverlauf-Daten: %s", verlauf_data)
+        logger.debug("📊 Tagesverlauf-Daten in Watt: %s", verlauf_data)
         return jsonify(verlauf_data)
 
     except Exception as e:
