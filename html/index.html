@@ -10,8 +10,8 @@
       --bg-dark: #121212;
       --text-light: #000000;
       --text-dark: #f0f0f0;
-      --blue: #00aaff;
-      --neonyellow: #fffb00;
+      --blue: #005e6e;
+      --neonyellow: #a6ff00;
       --card-bg-light: #f5f5f5;
       --card-bg-dark: #1e1e1e;
     }
@@ -110,35 +110,82 @@
       <div class="label">Wochenstatistik</div>
       <canvas id="woche"></canvas>
     </div>
-<div id="last-update" class="mt-4 flex items-center gap-4 p-3 rounded-lg border border-gray-300 dark:border-gray-600 max-w-fit bg-white dark:bg-[#1e1e1e] text-sm leading-tight shadow-sm">
-  <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-  </svg>
-  <div class="flex flex-col">
-   <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-      <span id="last-update-text">Letzte Aktualisierung: --</span>
-      <span id="live-badge" class="hidden text-xs font-semibold bg-yellow-200 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100 px-2 py-0.5 rounded-full w-max">Live</span>
+    <div id="last-update" class="mt-4 flex items-center gap-4 p-3 rounded-lg border border-gray-300 dark:border-gray-600 max-w-fit bg-white dark:bg-[#1e1e1e] text-sm leading-tight shadow-sm">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+      <div class="flex flex-col">
+        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
+          <span id="last-update-text">Letzte Aktualisierung: --</span>
+          <span id="live-badge" class="hidden text-xs font-semibold bg-yellow-200 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100 px-2 py-0.5 rounded-full w-max">Live</span>
+        </div>
+        <span id="seriennummer-text">Seriennummer: --</span>
+      </div>
     </div>
-    <span id="seriennummer-text">Seriennummer: --</span>
   </div>
-</div>
-</div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="dashboard.js"></script>
   <script>
+    function formatDatum(date) {
+      return date.toISOString().split("T")[0];
+    }
+
+    function berechneVerbrauch(daten) {
+      if (daten.length < 2) return 0;
+      return +(daten[daten.length - 1].bezug - daten[0].bezug).toFixed(2);
+    }
+
+    function aktualisiereAnzeige(aktuell) {
+      document.getElementById("leistung").textContent = `${aktuell.leistung} W`;
+      document.getElementById("bezug").textContent = `${aktuell.bezug.toFixed(2)} kWh`;
+      document.getElementById("einspeisung").textContent = `${aktuell.einspeisung.toFixed(2)} kWh`;
+    }
+
+    function renderGauge(wert) {
+      const ctx = document.getElementById("gauge").getContext("2d");
+      new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["", ""],
+          datasets: [{
+            data: [wert, 5000 - wert],
+            backgroundColor: ["#fffb00", "#444"],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          cutout: "80%",
+          rotation: -90,
+          circumference: 180,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderVerlauf(daten) {
+      const labels = daten.map(e => new Date(e.timestamp).toLocaleTimeString());
+      const werte = daten.map(e => e.leistung);
+      new Chart(document.getElementById("verlauf"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Leistung [W]",
+            data: werte,
+            borderColor: "#00aaff",
+            fill: false
+          }]
+        },
+        options: { scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 10 } } } }
+      });
+    }
+
     async function fetchDashboardData() {
       try {
         const response = await fetch('/api/dashboard');
         const data = await response.json();
 
-        // Daten in die HTML-Elemente einfügen
-        document.getElementById('leistung').textContent = `${data.leistung} W`;
-        document.getElementById('bezug').textContent = `${data.bezug} kWh`;
-        document.getElementById('einspeisung').textContent = `${data.einspeisung} kWh`;
-        document.getElementById('verbrauchHeute').textContent = `${data.verbrauchHeute} kWh`;
-        document.getElementById('verbrauchGestern').textContent = `${data.verbrauchGestern} kWh`;
+        aktualisiereAnzeige(data);
 
-        // Letzte Aktualisierung anzeigen
         const now = new Date();
         document.getElementById('last-update-text').textContent = `Letzte Aktualisierung: ${now.toLocaleString()}`;
       } catch (error) {
@@ -150,71 +197,67 @@
       try {
         const response = await fetch('/api/tagesverlauf');
         const verlaufData = await response.json();
-
-        // Daten für das Diagramm vorbereiten
-        const labels = verlaufData.map(entry => new Date(entry.timestamp).toLocaleTimeString());
-        const values = verlaufData.map(entry => entry.bezug);
-
-        // Diagramm aktualisieren
-        updateTagesverlaufChart(labels, values);
+        renderVerlauf(verlaufData);
       } catch (error) {
         console.error('Fehler beim Abrufen des Tagesverlaufs:', error);
       }
     }
 
-    // Funktion zum Aktualisieren des Diagramms
-    function updateTagesverlaufChart(labels, values) {
-      const ctx = document.getElementById('verlauf').getContext('2d');
+    async function fetchWochenstatistik() {
+      try {
+        const response = await fetch('/api/wochenstatistik');
+        const statistikData = await response.json();
 
-      // Falls das Diagramm bereits existiert, zerstöre es
-      if (window.tagesverlaufChart) {
-        window.tagesverlaufChart.destroy();
-      }
+        const labels = statistikData.map(entry => entry.datum);
+        const values = statistikData.map(entry => entry.verbrauch);
 
-      // Neues Diagramm erstellen
-      window.tagesverlaufChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-          labels: labels,
-          datasets: [{
-            label: 'Tagesverlauf (Bezug in Wh)',
-            data: values,
-            borderColor: 'rgba(0, 123, 255, 1)',
-            backgroundColor: 'rgba(0, 123, 255, 0.2)',
-            borderWidth: 2,
-            fill: true,
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-            }
+        const ctx = document.getElementById('woche').getContext('2d');
+        new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Tagesverbrauch (kWh)',
+              data: values,
+              backgroundColor: 'rgba(40, 167, 69, 0.2)',
+              borderColor: 'rgba(40, 167, 69, 1)',
+              borderWidth: 1,
+            }]
           },
-          scales: {
-            x: {
-              title: {
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
                 display: true,
-                text: 'Zeit'
+                position: 'top',
               }
             },
-            y: {
-              title: {
-                display: true,
-                text: 'Bezug (kWh)'
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Datum'
+                }
               },
-              beginAtZero: true
+              y: {
+                title: {
+                  display: true,
+                  text: 'Verbrauch (kWh)'
+                },
+                beginAtZero: true
+              }
             }
           }
-        }
-      });
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Wochenstatistik:', error);
+      }
     }
 
     // Daten beim Laden der Seite abrufen
     fetchDashboardData();
     fetchTagesverlauf();
+    fetchWochenstatistik();
 
     // Daten alle 60 Sekunden aktualisieren
     setInterval(fetchDashboardData, 60000);
