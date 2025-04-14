@@ -25,10 +25,10 @@ for i, eintrag in enumerate(daten):  # Verwende enumerate, um den Index automati
             VALUES (?, ?, ?, ?, ?)
         """, (
             zaehler_id,
-            eintrag[timestamp],
-            eintrag[bezug],
-            eintrga[einspeisung],
-            eintrag[leistung]
+            eintrag["timestamp"],
+            eintrag["bezug"],
+            eintrga["einspeisung"],
+            eintrag["leistung"]
         ))
     print(f"📊 Messwert in SQLite gespeichert: {eintrag}")
 
