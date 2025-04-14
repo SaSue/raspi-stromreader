@@ -10,12 +10,12 @@ DB_DATEI = "/app/data/strom.sqlite"
 conn = sqlite3.connect(DB_DATEI)
 cursor = conn.cursor()
 
-zaehler_id = 1  # Hier die ID des Zählers angeben
+
 
 # JSON-Datei einlesen
 with open(JSON_DATEI, "r", encoding="utf-8") as f:
     daten = json.load(f)
-i = 0
+
 # Daten einfügen
 for eintrag in daten:
 
@@ -25,12 +25,11 @@ for eintrag in daten:
         VALUES (?, ?, ?, ?, ?)
     """, (
         zaehler_id,
-        eintrag["timestamp"][i],
-        eintrag["bezug"][i],
-        eintrag["einspeisung"][i],
-        eintrag["leistung"][i]
+        eintrag["timestamp"],
+        eintrag["bezug"],
+        eintrag["einspeisung"],
+        eintrag["leistung"]
     ))
-    i = i + 1
     print(f"📊 Messwert in SQLite gespeichert: {eintrag}")
 
 # Änderungen speichern und Verbindung schließen
