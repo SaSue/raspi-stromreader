@@ -140,6 +140,12 @@
       border-radius: 0.5rem; /* Abgerundete Ecken */
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Leichter Schatten */
     }
+
+    .details {
+      margin-top: 1rem; /* Abstand zwischen dem Hauptwert und den Details */
+      font-size: 0.9rem; /* Optional: Schriftgröße der Details anpassen */
+      color: var(--text-light); /* Optional: Farbe der Details */
+    }
   </style>
 </head>
 <body>
@@ -175,7 +181,7 @@
         <div class="details">
           <div>Max: <span id="maxHeute">-- W</span></div>
           <div>Min: <span id="minHeute">-- W</span></div>
-          <div>Durchschnitt: <span id="avgHeute">-- W</span></div>
+          <div>⌀: <span id="avgHeute">-- W</span></div>
         </div>
       </div>
       <div class="card">
@@ -184,7 +190,7 @@
         <div class="details">
           <div>Max: <span id="maxGestern">-- W</span></div>
           <div>Min: <span id="minGestern">-- W</span></div>
-          <div>Durchschnitt: <span id="avgGestern">-- W</span></div>
+          <div>⌀: <span id="avgGestern">-- W</span></div>
         </div>
       </div>
       <div class="card" style="grid-column: 1 / -1">
@@ -307,14 +313,14 @@
 
       // Tagesverbrauch heute
       document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
-      document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
       document.getElementById("minHeute").textContent = `${aktuell.minHeute || '--'} W`;
+      document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
       document.getElementById("avgHeute").textContent = `${(aktuell.avgHeute || 0).toFixed(2)} W`;
 
       // Tagesverbrauch gestern
       document.getElementById("verbrauchGestern").textContent = `${(aktuell.verbrauchGestern || 0).toFixed(2)} kWh`;
-      document.getElementById("maxGestern").textContent = `${aktuell.maxGestern || '--'} W`;
       document.getElementById("minGestern").textContent = `${aktuell.minGestern || '--'} W`;
+      document.getElementById("maxGestern").textContent = `${aktuell.maxGestern || '--'} W`;
       document.getElementById("avgGestern").textContent = `${(aktuell.avgGestern || 0).toFixed(2)} W`;
     }
 
