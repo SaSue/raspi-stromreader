@@ -28,6 +28,9 @@
       .card {
         background-color: var(--card-bg-dark);
       }
+      .details {
+        color: var(--text-dark); /* Textfarbe für Details im Darkmode */
+      }
     }
 
     @media (prefers-color-scheme: light) {
@@ -179,8 +182,8 @@
         <div class="label">Tagesverbrauch heute</div>
         <div class="value" id="verbrauchHeute">-- kWh</div>
         <div class="details">
-          <div>Max: <span id="maxHeute">-- W</span></div>
           <div>Min: <span id="minHeute">-- W</span></div>
+          <div>Max: <span id="maxHeute">-- W</span></div>
           <div>⌀: <span id="avgHeute">-- W</span></div>
         </div>
       </div>
@@ -188,8 +191,8 @@
         <div class="label">Tagesverbrauch gestern</div>
         <div class="value" id="verbrauchGestern">-- kWh</div>
         <div class="details">
-          <div>Max: <span id="maxGestern">-- W</span></div>
           <div>Min: <span id="minGestern">-- W</span></div>
+          <div>Max: <span id="maxGestern">-- W</span></div>
           <div>⌀: <span id="avgGestern">-- W</span></div>
         </div>
       </div>
