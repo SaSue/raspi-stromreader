@@ -138,6 +138,8 @@
     <button id="dashboard-tab" class="active" onclick="showTab('dashboard', this)">Dashboard</button>
     <button id="tagesdaten-tab" onclick="showTab('tagesdaten', this)">Tagesdaten</button>
     <button id="wochenstatistik-tab" onclick="showTab('wochenstatistik', this)">Wochenstatistik</button>
+    <button id="monatsstatistik-tab" onclick="showTab('monatsstatistik', this)">Monatsstatistik</button>
+    <button id="jahresstatistik-tab" onclick="showTab('jahresstatistik', this)">Jahresstatistik</button>
   </div>
 
   <!-- Dashboard Tab -->
@@ -203,10 +205,28 @@
     </div>
   </div>
 
+  <!-- Monatsstatistik Tab -->
+  <div id="monatsstatistik" class="tab-content">
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Monatsstatistik</div>
+      <canvas id="monatsstatistik-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Jahresstatistik Tab -->
+  <div id="jahresstatistik" class="tab-content">
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Jahresstatistik</div>
+      <canvas id="jahresstatistik-chart"></canvas>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     let tagesverlaufChart; // Variable für das Tagesverlauf-Diagramm
     let wochenstatistikChart; // Variable für das Wochenstatistik-Diagramm
+    let monatsstatistikChart; // Variable für das Monatsstatistik-Diagramm
+    let jahresstatistikChart; // Variable für das Jahresstatistik-Diagramm
 
     function formatDatum(date) {
       return date.toISOString().split("T")[0];
@@ -408,6 +428,122 @@
       }
     }
 
+    async function fetchMonatsstatistik() {
+      try {
+        const response = await fetch('/api/monatsstatistik');
+        const data = await response.json();
+
+        const labels = data.map(entry => entry.monat);
+        const values = data.map(entry => entry.verbrauch);
+
+        const ctx = document.getElementById('monatsstatistik-chart').getContext('2d');
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (monatsstatistikChart) {
+          monatsstatistikChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        monatsstatistikChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Monatlicher Verbrauch (kWh)',
+              data: values,
+              backgroundColor: 'rgba(54, 162, 235, 0.2)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Monat'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Verbrauch (kWh)'
+                },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Monatsstatistik:', error);
+      }
+    }
+
+    async function fetchJahresstatistik() {
+      try {
+        const response = await fetch('/api/jahresstatistik');
+        const data = await response.json();
+
+        const labels = data.map(entry => entry.jahr);
+        const values = data.map(entry => entry.verbrauch);
+
+        const ctx = document.getElementById('jahresstatistik-chart').getContext('2d');
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (jahresstatistikChart) {
+          jahresstatistikChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        jahresstatistikChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Jährlicher Verbrauch (kWh)',
+              data: values,
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Jahr'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Verbrauch (kWh)'
+                },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Jahresstatistik:', error);
+      }
+    }
+
     function showTab(tabId, button) {
       document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -418,6 +554,10 @@
         btn.classList.remove('active');
       });
       button.classList.add('active');
+
+      // Daten für die Statistik-Tabs abrufen
+      if (tabId === 'monatsstatistik') fetchMonatsstatistik();
+      if (tabId === 'jahresstatistik') fetchJahresstatistik();
     }
 
     // Daten beim Laden der Seite abrufen

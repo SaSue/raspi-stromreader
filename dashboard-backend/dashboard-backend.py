@@ -237,6 +237,68 @@ def get_tagesdaten():
         conn.close()
         logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
 
+@app.route('/api/monatsstatistik', methods=['GET'])
+def get_monatsstatistik():
+    logger.debug("📊 API-Aufruf: /api/monatsstatistik")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Verbrauchsdaten der letzten 12 Monate berechnen
+        logger.debug("🔍 Abfrage: Monatsstatistik der letzten 12 Monate")
+        statistik = cursor.execute("""
+            SELECT strftime('%Y-%m', timestamp) as monat,
+                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            WHERE timestamp >= DATE('now', '-12 months')
+            GROUP BY strftime('%Y-%m', timestamp)
+            ORDER BY monat ASC
+        """).fetchall()
+
+        # Daten in ein JSON-kompatibles Format umwandeln
+        statistik_data = [{"monat": row["monat"], "verbrauch": row["verbrauch"]} for row in statistik]
+        logger.debug("📊 Monatsstatistik-Daten: %s", statistik_data)
+        return jsonify(statistik_data)
+
+    except Exception as e:
+        logger.error("❌ Fehler beim Abrufen der Monatsstatistik: %s", str(e))
+        return jsonify({"error": "Fehler beim Abrufen der Monatsstatistik"}), 500
+
+    finally:
+        conn.close()
+        logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
+
+@app.route('/api/jahresstatistik', methods=['GET'])
+def get_jahresstatistik():
+    logger.debug("📊 API-Aufruf: /api/jahresstatistik")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Verbrauchsdaten der letzten 5 Jahre berechnen
+        logger.debug("🔍 Abfrage: Jahresstatistik der letzten 5 Jahre")
+        statistik = cursor.execute("""
+            SELECT strftime('%Y', timestamp) as jahr,
+                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            WHERE timestamp >= DATE('now', '-5 years')
+            GROUP BY strftime('%Y', timestamp)
+            ORDER BY jahr ASC
+        """).fetchall()
+
+        # Daten in ein JSON-kompatibles Format umwandeln
+        statistik_data = [{"jahr": row["jahr"], "verbrauch": row["verbrauch"]} for row in statistik]
+        logger.debug("📊 Jahresstatistik-Daten: %s", statistik_data)
+        return jsonify(statistik_data)
+
+    except Exception as e:
+        logger.error("❌ Fehler beim Abrufen der Jahresstatistik: %s", str(e))
+        return jsonify({"error": "Fehler beim Abrufen der Jahresstatistik"}), 500
+
+    finally:
+        conn.close()
+        logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
+
 if __name__ == '__main__':
     logger.debug("🚀 Starte Flask-Server auf Port 5000...")
     app.run(host='0.0.0.0', port=5000)
