@@ -65,7 +65,7 @@ def get_dashboard_data():
 
         # Differenz berechnen, falls beide Werte vorhanden sind
         if verbrauch_heute_start and verbrauch_heute_end:
-            verbrauch_heute = verbrauch_heute_end["bezug_kwh"] - verbrauch_heute_start["bezug_kwh"]
+            verbrauch_heute = round(verbrauch_heute_end["bezug_kwh"] - verbrauch_heute_start["bezug_kwh"],2)
             logger.debug("📊 Verbrauch heute berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
                          verbrauch_heute_start["bezug_kwh"], verbrauch_heute_end["bezug_kwh"], verbrauch_heute)
         else:
@@ -89,7 +89,7 @@ def get_dashboard_data():
 
         # Differenz berechnen, falls beide Werte vorhanden sind
         if verbrauch_gestern_start and verbrauch_gestern_end:
-            verbrauch_gestern = verbrauch_gestern_end["bezug_kwh"] - verbrauch_gestern_start["bezug_kwh"]
+            verbrauch_gestern = round(verbrauch_gestern_end["bezug_kwh"] - verbrauch_gestern_start["bezug_kwh"],2)
             logger.debug("📊 Verbrauch gestern berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
                          verbrauch_gestern_start["bezug_kwh"], verbrauch_gestern_end["bezug_kwh"], verbrauch_gestern)
         else:
