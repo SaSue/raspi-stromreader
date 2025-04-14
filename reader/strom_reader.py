@@ -346,7 +346,8 @@ while True:
                     logging.debug("💾 Daten in SQLite gespeichert")   
                 except Exception as e:
                     logging.error("❌ Fehler beim Speichern in SQLite: %s", e)
-
+                
+                """
                 # JSON-Daten speichern  
                 try:
                     # Aktuelle Datei speichern
@@ -371,7 +372,7 @@ while True:
                     
                 except Exception as e:
                     logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
-
+                """
                 last_json_write = current_time             
             else:
                 logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
