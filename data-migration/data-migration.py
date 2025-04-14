@@ -15,10 +15,10 @@ zaehler_id = 1  # ID des Zählers
 # JSON-Datei einlesen
 with open(JSON_DATEI, "r", encoding="utf-8") as f:
     daten = json.load(f)
-
+i =0
 # Daten einfügen
 for eintrag in daten:
-
+"""
     # Messwert einfügen
     cursor.execute("""
         INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
@@ -30,7 +30,10 @@ for eintrag in daten:
         eintrag["einspeisung"],
         eintrag["leistung"]
     ))
-    print(f"📊 Messwert in SQLite gespeichert: {eintrag}")
+    """
+    print(f"Schleifendurchlauf {i} Messwert: {eintrag}")  
+    i += 1
+
 
 # Änderungen speichern und Verbindung schließen
 conn.commit()
