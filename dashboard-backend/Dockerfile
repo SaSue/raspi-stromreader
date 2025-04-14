@@ -2,7 +2,7 @@ FROM python:3-slim
 
 WORKDIR /app
 
-# RUN pip install pyserial crcmod
+RUN pip install flask
 
 COPY dashboard-backend.py /app/dashboard-backend.py
 
