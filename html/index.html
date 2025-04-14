@@ -76,53 +76,82 @@
       width: 100% !important;
       height: auto !important;
     }
+
+    .tab {
+      margin-top: 1rem;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
   </style>
 </head>
 <body>
   <h1>⚡ Strom-Dashboard</h1>
-  <div class="grid">
-    <div class="card">
-      <div class="label">Momentanverbrauch</div>
-      <div class="value" id="leistung">-- W</div>
-      <canvas id="gauge"></canvas>
-    </div>
-    <div class="card">
-      <div class="label">Bezug</div>
-      <div class="value" id="bezug">-- kWh</div>
-    </div>
-    <div class="card">
-      <div class="label">Einspeisung</div>
-      <div class="value" id="einspeisung">-- kWh</div>
-    </div>
-    <div class="card">
-      <div class="label">Tagesverbrauch heute</div>
-      <div class="value" id="verbrauchHeute">-- kWh</div>
-    </div>
-    <div class="card">
-      <div class="label">Tagesverbrauch gestern</div>
-      <div class="value" id="verbrauchGestern">-- kWh</div>
-    </div>
-    <div class="card" style="grid-column: 1 / -1">
-      <div class="label">Tagesverlauf</div>
-      <canvas id="verlauf"></canvas>
-    </div>
-    <div class="card" style="grid-column: 1 / -1">
-      <div class="label">Wochenstatistik</div>
-      <canvas id="woche"></canvas>
-    </div>
-    <div id="last-update" class="mt-4 flex items-center gap-4 p-3 rounded-lg border border-gray-300 dark:border-gray-600 max-w-fit bg-white dark:bg-[#1e1e1e] text-sm leading-tight shadow-sm">
-      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-yellow-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <div class="flex flex-col">
-        <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:gap-2">
-          <span id="last-update-text">Letzte Aktualisierung: --</span>
-          <span id="live-badge" class="hidden text-xs font-semibold bg-yellow-200 text-yellow-900 dark:bg-yellow-600 dark:text-yellow-100 px-2 py-0.5 rounded-full w-max">Live</span>
-        </div>
-        <span id="seriennummer-text">Seriennummer: --</span>
+  <div class="tab">
+    <button onclick="showTab('dashboard')">Dashboard</button>
+    <button onclick="showTab('tagesdaten')">Tagesdaten</button>
+  </div>
+
+  <!-- Dashboard Tab -->
+  <div id="dashboard" class="tab-content active">
+    <div class="grid">
+      <div class="card">
+        <div class="label">Momentanverbrauch</div>
+        <div class="value" id="leistung">-- W</div>
+        <canvas id="gauge"></canvas>
+      </div>
+      <div class="card">
+        <div class="label">Bezug</div>
+        <div class="value" id="bezug">-- kWh</div>
+      </div>
+      <div class="card">
+        <div class="label">Einspeisung</div>
+        <div class="value" id="einspeisung">-- kWh</div>
+      </div>
+      <div class="card">
+        <div class="label">Tagesverbrauch heute</div>
+        <div class="value" id="verbrauchHeute">-- kWh</div>
+      </div>
+      <div class="card">
+        <div class="label">Tagesverbrauch gestern</div>
+        <div class="value" id="verbrauchGestern">-- kWh</div>
+      </div>
+      <div class="card" style="grid-column: 1 / -1">
+        <div class="label">Tagesverlauf</div>
+        <canvas id="verlauf"></canvas>
+      </div>
+      <div class="card" style="grid-column: 1 / -1">
+        <div class="label">Wochenstatistik</div>
+        <canvas id="woche"></canvas>
       </div>
     </div>
   </div>
+
+  <!-- Tagesdaten Tab -->
+  <div id="tagesdaten" class="tab-content">
+    <div class="card">
+      <div class="label">Datum auswählen</div>
+      <input type="date" id="datum-auswahl" onchange="fetchTagesdaten()" />
+    </div>
+    <div class="card">
+      <div class="label">Tagesverbrauch gesamt</div>
+      <div class="value" id="tagesverbrauch">-- kWh</div>
+    </div>
+    <div class="card">
+      <div class="label">Tagesendstand</div>
+      <div class="value" id="tagesendstand">-- kWh</div>
+    </div>
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Tagesverlauf</div>
+      <canvas id="tagesverlauf"></canvas>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     function formatDatum(date) {
@@ -258,6 +287,48 @@
       } catch (error) {
         console.error('Fehler beim Abrufen der Wochenstatistik:', error);
       }
+    }
+
+    async function fetchTagesdaten() {
+      const datum = document.getElementById('datum-auswahl').value;
+      if (!datum) return;
+
+      try {
+        const response = await fetch(`/api/tagesdaten?datum=${datum}`);
+        const data = await response.json();
+
+        // Tagesverbrauch und Endstand aktualisieren
+        document.getElementById('tagesverbrauch').textContent = `${data.verbrauch.toFixed(2)} kWh`;
+        document.getElementById('tagesendstand').textContent = `${data.endstand.toFixed(2)} kWh`;
+
+        // Tagesverlauf-Diagramm aktualisieren
+        const labels = data.verlauf.map(e => new Date(e.timestamp).toLocaleTimeString());
+        const werte = data.verlauf.map(e => e.leistung);
+
+        const ctx = document.getElementById('tagesverlauf').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Leistung [W]',
+              data: werte,
+              borderColor: '#00aaff',
+              fill: false
+            }]
+          },
+          options: { scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 10 } } } }
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Tagesdaten:', error);
+      }
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
     }
 
     // Daten beim Laden der Seite abrufen

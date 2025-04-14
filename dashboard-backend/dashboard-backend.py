@@ -1,4 +1,4 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 import sqlite3
 import logging
 
@@ -168,6 +168,64 @@ def get_wochenstatistik():
     except Exception as e:
         logger.error("❌ Fehler beim Abrufen der Wochenstatistik: %s", str(e))
         return jsonify({"error": "Fehler beim Abrufen der Wochenstatistik"}), 500
+
+    finally:
+        conn.close()
+        logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
+
+@app.route('/api/tagesdaten', methods=['GET'])
+def get_tagesdaten():
+    logger.debug("📊 API-Aufruf: /api/tagesdaten")
+    datum = request.args.get('datum')  # Datum aus den Query-Parametern abrufen
+    if not datum:
+        logger.error("❌ Kein Datum angegeben.")
+        return jsonify({"error": "Kein Datum angegeben"}), 400
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Tagesverbrauch berechnen (max - min Bezug)
+        logger.debug("🔍 Abfrage: Tagesverbrauch für %s", datum)
+        verbrauch_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
+            FROM messwerte
+            WHERE DATE(timestamp) = ?
+        """, (datum,)).fetchone()
+        verbrauch = verbrauch_row["verbrauch"] if verbrauch_row and verbrauch_row["verbrauch"] is not None else 0
+
+        # Tagesendstand abrufen (max Bezug)
+        logger.debug("🔍 Abfrage: Tagesendstand für %s", datum)
+        endstand_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) AS endstand
+            FROM messwerte
+            WHERE DATE(timestamp) = ?
+        """, (datum,)).fetchone()
+        endstand = endstand_row["endstand"] if endstand_row and endstand_row["endstand"] is not None else 0
+
+        # Tagesverlauf abrufen (Leistung über den Tag)
+        logger.debug("🔍 Abfrage: Tagesverlauf für %s", datum)
+        verlauf = cursor.execute("""
+            SELECT timestamp, wirkleistung_watt
+            FROM messwerte
+            WHERE DATE(timestamp) = ?
+            ORDER BY timestamp ASC
+        """, (datum,)).fetchall()
+
+        verlauf_data = [{"timestamp": row["timestamp"], "leistung": row["wirkleistung_watt"]} for row in verlauf]
+
+        # API-Antwort erstellen
+        response = {
+            "verbrauch": verbrauch,
+            "endstand": endstand,
+            "verlauf": verlauf_data
+        }
+        logger.debug("📤 API-Antwort: %s", response)
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error("❌ Fehler bei der Verarbeitung der Tagesdaten: %s", str(e))
+        return jsonify({"error": "Fehler beim Abrufen der Tagesdaten"}), 500
 
     finally:
         conn.close()
