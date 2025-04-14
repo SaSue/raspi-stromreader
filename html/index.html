@@ -172,10 +172,20 @@
       <div class="card">
         <div class="label">Tagesverbrauch heute</div>
         <div class="value" id="verbrauchHeute">-- kWh</div>
+        <div class="details">
+          <div>Max: <span id="maxHeute">-- W</span></div>
+          <div>Min: <span id="minHeute">-- W</span></div>
+          <div>Durchschnitt: <span id="avgHeute">-- W</span></div>
+        </div>
       </div>
       <div class="card">
         <div class="label">Tagesverbrauch gestern</div>
         <div class="value" id="verbrauchGestern">-- kWh</div>
+        <div class="details">
+          <div>Max: <span id="maxGestern">-- W</span></div>
+          <div>Min: <span id="minGestern">-- W</span></div>
+          <div>Durchschnitt: <span id="avgGestern">-- W</span></div>
+        </div>
       </div>
       <div class="card" style="grid-column: 1 / -1">
         <div class="label">Tagesverlauf</div>
@@ -286,11 +296,15 @@
     }
 
     function aktualisiereAnzeige(aktuell) {
-      document.getElementById("leistung").textContent = `${aktuell.leistung || '--'} W`;
-      document.getElementById("bezug").textContent = `${(aktuell.bezug || 0).toFixed(2)} kWh`;
-      document.getElementById("einspeisung").textContent = `${(aktuell.einspeisung || 0).toFixed(2)} kWh`;
       document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
+      document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
+      document.getElementById("minHeute").textContent = `${aktuell.minHeute || '--'} W`;
+      document.getElementById("avgHeute").textContent = `${(aktuell.avgHeute || 0).toFixed(2)} W`;
+
       document.getElementById("verbrauchGestern").textContent = `${(aktuell.verbrauchGestern || 0).toFixed(2)} kWh`;
+      document.getElementById("maxGestern").textContent = `${aktuell.maxGestern || '--'} W`;
+      document.getElementById("minGestern").textContent = `${aktuell.minGestern || '--'} W`;
+      document.getElementById("avgGestern").textContent = `${(aktuell.avgGestern || 0).toFixed(2)} W`;
     }
 
     function renderGauge(wert) {

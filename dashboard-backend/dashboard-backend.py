@@ -27,82 +27,44 @@ def get_dashboard_data():
     cursor = conn.cursor()
 
     try:
-        # Beispielabfragen
-        logger.debug("🔍 Abfrage: Aktuelle Leistung")
-        leistung = cursor.execute("SELECT wirkleistung_watt FROM messwerte ORDER BY timestamp DESC LIMIT 1").fetchone()
-        
-        logger.debug("🔍 Abfrage: Tagesbezug")
-        bezug = round((cursor.execute("""
-            SELECT bezug_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now') 
-            ORDER BY timestamp DESC LIMIT 1
-        """).fetchone())["bezug_kwh"],2)
-        logger.debug("📊 Tagesbezug: %.2f kWh", bezug)
-
-        logger.debug("🔍 Abfrage: Tageseinspeisung")
-
-        einspeisung = round((cursor.execute("""
-            SELECT einspeisung_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now') 
-            ORDER BY timestamp DESC LIMIT 1
-        """).fetchone())["einspeisung_kwh"],2)
-        logger.debug("📊 Tageseinspeisung: %.2f kWh", einspeisung)
-
-        logger.debug("🔍 Abfrage: Verbrauch heute")
-
-        # Ersten und letzten Wert des heutigen Tages abrufen
-        verbrauch_heute_start = cursor.execute("""
-            SELECT bezug_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now') 
-            ORDER BY timestamp ASC LIMIT 1
+        # Max, Min und Durchschnitt für heute
+        logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
+        heute_stats = cursor.execute("""
+            SELECT 
+                MAX(wirkleistung_watt) as max_watt,
+                MIN(wirkleistung_watt) as min_watt,
+                AVG(wirkleistung_watt) as avg_watt
+            FROM messwerte
+            WHERE DATE(timestamp) = DATE('now')
         """).fetchone()
 
-        verbrauch_heute_end = cursor.execute("""
-            SELECT bezug_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now') 
-            ORDER BY timestamp DESC LIMIT 1
+        max_heute = heute_stats["max_watt"] if heute_stats and heute_stats["max_watt"] is not None else 0
+        min_heute = heute_stats["min_watt"] if heute_stats and heute_stats["min_watt"] is not None else 0
+        avg_heute = round(heute_stats["avg_watt"], 2) if heute_stats and heute_stats["avg_watt"] is not None else 0
+
+        # Max, Min und Durchschnitt für gestern
+        logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für gestern")
+        gestern_stats = cursor.execute("""
+            SELECT 
+                MAX(wirkleistung_watt) as max_watt,
+                MIN(wirkleistung_watt) as min_watt,
+                AVG(wirkleistung_watt) as avg_watt
+            FROM messwerte
+            WHERE DATE(timestamp) = DATE('now', '-1 day')
         """).fetchone()
 
-        # Differenz berechnen, falls beide Werte vorhanden sind
-        if verbrauch_heute_start and verbrauch_heute_end:
-            verbrauch_heute = round(verbrauch_heute_end["bezug_kwh"] - verbrauch_heute_start["bezug_kwh"],2)
-            logger.debug("📊 Verbrauch heute berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
-                         verbrauch_heute_start["bezug_kwh"], verbrauch_heute_end["bezug_kwh"], verbrauch_heute)
-        else:
-            verbrauch_heute = 0
-            logger.debug("⚠️ Kein Verbrauch heute berechnet, da nicht genügend Daten vorhanden sind.")
-
-        logger.debug("🔍 Abfrage: Verbrauch gestern")
-
-        # Ersten und letzten Wert des gestrigen Tages abrufen
-        verbrauch_gestern_start = cursor.execute("""
-            SELECT bezug_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now', '-1 day') 
-            ORDER BY timestamp ASC LIMIT 1
-        """).fetchone()
-
-        verbrauch_gestern_end = cursor.execute("""
-            SELECT bezug_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now', '-1 day') 
-            ORDER BY timestamp DESC LIMIT 1
-        """).fetchone()
-
-        # Differenz berechnen, falls beide Werte vorhanden sind
-        if verbrauch_gestern_start and verbrauch_gestern_end:
-            verbrauch_gestern = round(verbrauch_gestern_end["bezug_kwh"] - verbrauch_gestern_start["bezug_kwh"],2)
-            logger.debug("📊 Verbrauch gestern berechnet: Start = %.4f, Ende = %.4f, Differenz = %.4f",
-                         verbrauch_gestern_start["bezug_kwh"], verbrauch_gestern_end["bezug_kwh"], verbrauch_gestern)
-        else:
-            verbrauch_gestern = 0
-            logger.debug("⚠️ Kein Verbrauch gestern berechnet, da nicht genügend Daten vorhanden sind.")
+        max_gestern = gestern_stats["max_watt"] if gestern_stats and gestern_stats["max_watt"] is not None else 0
+        min_gestern = gestern_stats["min_watt"] if gestern_stats and gestern_stats["min_watt"] is not None else 0
+        avg_gestern = round(gestern_stats["avg_watt"], 2) if gestern_stats and gestern_stats["avg_watt"] is not None else 0
 
         # Daten als JSON zurückgeben
         response = {
-            "leistung": leistung["wirkleistung_watt"] if leistung else 0,
-            "bezug": bezug,
-            "einspeisung": einspeisung,
-            "verbrauchHeute": verbrauch_heute,
-            "verbrauchGestern": verbrauch_gestern
+            "maxHeute": max_heute,
+            "minHeute": min_heute,
+            "avgHeute": avg_heute,
+            "maxGestern": max_gestern,
+            "minGestern": min_gestern,
+            "avgGestern": avg_gestern
         }
         logger.debug("📤 API-Antwort: %s", response)
         return jsonify(response)
