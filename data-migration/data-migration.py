@@ -15,23 +15,22 @@ zaehler_id = 1  # Hier die ID des Zählers angeben
 # JSON-Datei einlesen
 with open(JSON_DATEI, "r", encoding="utf-8") as f:
     daten = json.load(f)
-
+i = 0
 # Daten einfügen
 for eintrag in daten:
-    # Zähler-ID abrufen oder einfügen
-    cursor.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (eintrag["seriennummer"],))
-    
+
     # Messwert einfügen
     cursor.execute("""
         INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
         VALUES (?, ?, ?, ?, ?)
     """, (
         zaehler_id,
-        eintrag["timestamp"],
-        eintrag["bezug"],
-        eintrag["einspeisung"],
-        eintrag["leistung"]
+        eintrag["timestamp"][i],
+        eintrag["bezug"][i],
+        eintrag["einspeisung"][i],
+        eintrag["leistung"][i]
     ))
+    i = i + 1
     print(f"📊 Messwert in SQLite gespeichert: {eintrag}")
 
 # Änderungen speichern und Verbindung schließen
