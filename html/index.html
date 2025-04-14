@@ -125,5 +125,32 @@
 </div>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="dashboard.js"></script>
+  <script>
+    async function fetchDashboardData() {
+      try {
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
+
+        // Daten in die HTML-Elemente einfügen
+        document.getElementById('leistung').textContent = `${data.leistung} W`;
+        document.getElementById('bezug').textContent = `${data.bezug} kWh`;
+        document.getElementById('einspeisung').textContent = `${data.einspeisung} kWh`;
+        document.getElementById('verbrauchHeute').textContent = `${data.verbrauchHeute} kWh`;
+        document.getElementById('verbrauchGestern').textContent = `${data.verbrauchGestern} kWh`;
+
+        // Letzte Aktualisierung anzeigen
+        const now = new Date();
+        document.getElementById('last-update-text').textContent = `Letzte Aktualisierung: ${now.toLocaleString()}`;
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Dashboard-Daten:', error);
+      }
+    }
+
+    // Daten beim Laden der Seite abrufen
+    fetchDashboardData();
+
+    // Daten alle 60 Sekunden aktualisieren
+    setInterval(fetchDashboardData, 60000);
+  </script>
 </body>
 </html>
