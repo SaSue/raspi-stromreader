@@ -369,14 +369,13 @@ while True:
                     with open(history_file, "w") as f:
                         json.dump(history_data, f, indent=2)
 
-                    last_json_write = current_time
                     
                 except Exception as e:
                     logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
                     continue  # Überspringt den aktuellen Zyklus und setzt die Schleife fort
             else:  
                 logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
-                  
+            last_json_write = current_time                  
         else: 
             crc_check_sml = False
             logging.debug("Kein gültiges Telegram zum verarbeiten")    
