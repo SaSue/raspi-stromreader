@@ -4,7 +4,7 @@ import logging
 from datetime import datetime
 
 # Datei-Pfade
-JSON_DATEI = "/app/data/2025-04-09.json"
+JSON_DATEI = "/app/data/history/2025-04-09.json"
 DB_DATEI = "strom.sqlite"
 
 # Datenbankverbindung und Tabelle vorbereiten
