@@ -1,6 +1,5 @@
 import json
 import sqlite3
-import logging
 from datetime import datetime
 
 # Datei-Pfade
@@ -17,19 +16,21 @@ with open(JSON_DATEI, "r", encoding="utf-8") as f:
 
 # Daten einfügen
 for eintrag in daten:
-     # Zähler-ID abrufen oder einfügen
-    cursor.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (eintrag["seriennummer"]))
-    row = c.fetchone()
+    # Zähler-ID abrufen oder einfügen
+    cursor.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (eintrag["seriennummer"],))
+    row = cursor.fetchone()
     if row:
         zaehler_id = row[0]
-        print("🔍 Zähler-ID gefunden: %s", zaehler_id)
+        print(f"🔍 Zähler-ID gefunden: {zaehler_id}")
     else:
-        cursor.execute("INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)", (eintrag["seriennummer"],eintrag["hersteller"]))
-        zaehler_id = c.lastrowid
-        print("💾 Neuer Zähler in SQLite gespeichert: %s", (seriennummer, hersteller))
+        cursor.execute(
+            "INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)",
+            (eintrag["seriennummer"], eintrag["hersteller"])
+        )
+        zaehler_id = cursor.lastrowid
+        print(f"💾 Neuer Zähler in SQLite gespeichert: {eintrag['seriennummer']}, {eintrag['hersteller']}")
 
     # Messwert einfügen
-    timestamp = datetime.now().isoformat()
     cursor.execute("""
         INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
         VALUES (?, ?, ?, ?, ?)
@@ -40,8 +41,7 @@ for eintrag in daten:
         eintrag["einspeisung"],
         eintrag["leistung"]
     ))
-    print("📊 Messwert in SQLite gespeichert: %s", eintrag)
-
+    print(f"📊 Messwert in SQLite gespeichert: {eintrag}")
 
 # Änderungen speichern und Verbindung schließen
 conn.commit()
