@@ -322,8 +322,9 @@ def get_statistik():
         logger.debug("🔍 Abfrage: Tag mit niedrigstem Verbrauch")
         min_tag_row = cursor.execute("""
             SELECT DATE(timestamp) as datum, 
-                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+                MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
             FROM messwerte
+            WHERE DATE(timestamp) != DATE('now')  -- Aktuellen Tag ausschließen
             GROUP BY DATE(timestamp)
             ORDER BY verbrauch ASC
             LIMIT 1
@@ -337,6 +338,7 @@ def get_statistik():
             FROM (
                 SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as tagesverbrauch
                 FROM messwerte
+                WHERE DATE(timestamp) != DATE('now')  -- Aktuellen Tag ausschließen
                 GROUP BY DATE(timestamp)
             )
         """).fetchone()
