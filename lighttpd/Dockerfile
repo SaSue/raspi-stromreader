@@ -1,7 +1,9 @@
 FROM alpine:latest
 
-RUN apk add --no-cache lighttpd
-
+RUN apk update \ 
+    && apk upgrade \
+    && apk add --no-cache lighttpd \
+    && apk del .build-deps
 COPY lighttpd.conf /etc/lighttpd/lighttpd.conf
 
 EXPOSE 80
