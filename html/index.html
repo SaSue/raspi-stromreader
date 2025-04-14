@@ -39,6 +39,12 @@
       }
     }
 
+    @media (max-width: 768px) {
+      .card {
+        padding: 1rem; /* Weniger Padding für kleinere Bildschirme */
+      }
+    }
+
     body {
       font-family: 'Segoe UI', sans-serif;
       margin: 0;
@@ -59,6 +65,7 @@
       padding: 1.5rem;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
       transition: transform 0.2s;
+      height: auto; /* Automatische Höhe basierend auf dem Inhalt */
     }
 
     .card:hover {
@@ -198,21 +205,30 @@
 
     function renderGauge(wert) {
       const ctx = document.getElementById("gauge").getContext("2d");
-      new Chart(ctx, {
+
+      // Falls das Gauge bereits existiert, zerstöre es, um es neu zu rendern
+      if (window.gaugeChart) {
+        window.gaugeChart.destroy();
+      }
+
+      // Neues Gauge-Diagramm erstellen
+      window.gaugeChart = new Chart(ctx, {
         type: "doughnut",
         data: {
-          labels: ["", ""],
+          labels: ["Verbrauch", "Rest"],
           datasets: [{
-            data: [wert, 5000 - wert],
-            backgroundColor: ["#fffb00", "#444"],
+            data: [wert, 5000 - wert], // Wert und Restkapazität
+            backgroundColor: ["#fffb00", "#444"], // Farben für Verbrauch und Rest
             borderWidth: 0
           }]
         },
         options: {
-          cutout: "80%",
-          rotation: -90,
-          circumference: 180,
-          plugins: { legend: { display: false } }
+          cutout: "80%", // Innerer Kreis
+          rotation: -90, // Startwinkel
+          circumference: 180, // Halbkreis
+          plugins: {
+            legend: { display: false } // Keine Legende anzeigen
+          }
         }
       });
     }
@@ -244,8 +260,13 @@
         const response = await fetch('/api/dashboard');
         const data = await response.json();
 
+        // Dashboard-Daten aktualisieren
         aktualisiereAnzeige(data);
 
+        // Gauge-Diagramm rendern
+        renderGauge(data.leistung || 0); // Falls kein Wert vorhanden ist, Standardwert 0
+
+        // Letzte Aktualisierung anzeigen
         const now = new Date();
         document.getElementById('last-update-text').textContent = `Letzte Aktualisierung: ${now.toLocaleString()}`;
       } catch (error) {
