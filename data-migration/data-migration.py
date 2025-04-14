@@ -18,7 +18,7 @@ with open(JSON_DATEI, "r", encoding="utf-8") as f:
 i =0
 # Daten einfügen
 for eintrag in daten:
-"""
+    """
     # Messwert einfügen
     cursor.execute("""
         INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
