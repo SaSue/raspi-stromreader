@@ -124,14 +124,14 @@ def get_tagesverlauf():
     try:
         # Tagesverlauf-Daten abrufen
         verlauf = cursor.execute("""
-            SELECT timestamp, leistung_watt 
+            SELECT timestamp, wirkleistung_watt 
             FROM messwerte 
             WHERE DATE(timestamp) = DATE('now')
             ORDER BY timestamp ASC
         """).fetchall()
 
         # Daten in ein JSON-kompatibles Format umwandeln
-        verlauf_data = [{"timestamp": row["timestamp"], "bezug": row["leistung_watt"]} for row in verlauf]
+        verlauf_data = [{"timestamp": row["timestamp"], "bezug": row["wirkleistung_watt"]} for row in verlauf]
         logger.debug("📊 Tagesverlauf-Daten in Watt: %s", verlauf_data)
         return jsonify(verlauf_data)
 
