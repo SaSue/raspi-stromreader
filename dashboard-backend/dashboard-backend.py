@@ -41,18 +41,12 @@ def get_dashboard_data():
 
         logger.debug("🔍 Abfrage: Tageseinspeisung")
 
-        # Ersten und letzten Wert der Einspeisung des Tages abrufen
-        einspeisung_start = cursor.execute("""
-            SELECT einspeisung_kwh FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now') 
-            ORDER BY timestamp ASC LIMIT 1
-        """).fetchone()
-
-        einspeisung_end = cursor.execute("""
+        einspeisung = round((cursor.execute("""
             SELECT einspeisung_kwh FROM messwerte 
             WHERE DATE(timestamp) = DATE('now') 
             ORDER BY timestamp DESC LIMIT 1
-        """).fetchone()
+        """).fetchone())["einspeisung_kwh"],2)
+        logger.debug("📊 Tageseinspeisung: %.2f kWh", einspeisung)
 
         # Differenz berechnen, falls beide Werte vorhanden sind
         if einspeisung_start and einspeisung_end:
