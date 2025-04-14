@@ -299,6 +299,105 @@ def get_jahresstatistik():
         conn.close()
         logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
 
+@app.route('/api/statistik', methods=['GET'])
+def get_statistik():
+    logger.debug("📊 API-Aufruf: /api/statistik")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Tag mit höchstem Verbrauch
+        logger.debug("🔍 Abfrage: Tag mit höchstem Verbrauch")
+        max_tag_row = cursor.execute("""
+            SELECT DATE(timestamp) as datum, 
+                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            GROUP BY DATE(timestamp)
+            ORDER BY verbrauch DESC
+            LIMIT 1
+        """).fetchone()
+        max_tag = {"datum": max_tag_row["datum"], "verbrauch": max_tag_row["verbrauch"]} if max_tag_row else None
+
+        # Tag mit niedrigstem Verbrauch
+        logger.debug("🔍 Abfrage: Tag mit niedrigstem Verbrauch")
+        min_tag_row = cursor.execute("""
+            SELECT DATE(timestamp) as datum, 
+                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            GROUP BY DATE(timestamp)
+            ORDER BY verbrauch ASC
+            LIMIT 1
+        """).fetchone()
+        min_tag = {"datum": min_tag_row["datum"], "verbrauch": min_tag_row["verbrauch"]} if min_tag_row else None
+
+        # Durchschnittlicher täglicher Verbrauch
+        logger.debug("🔍 Abfrage: Durchschnittlicher täglicher Verbrauch")
+        avg_tag_row = cursor.execute("""
+            SELECT AVG(tagesverbrauch) as avg_verbrauch
+            FROM (
+                SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as tagesverbrauch
+                FROM messwerte
+                GROUP BY DATE(timestamp)
+            )
+        """).fetchone()
+        avg_tag = avg_tag_row["avg_verbrauch"] if avg_tag_row else 0
+
+        # Monat mit höchstem Verbrauch
+        logger.debug("🔍 Abfrage: Monat mit höchstem Verbrauch")
+        max_monat_row = cursor.execute("""
+            SELECT strftime('%Y-%m', timestamp) as monat, 
+                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            GROUP BY strftime('%Y-%m', timestamp)
+            ORDER BY verbrauch DESC
+            LIMIT 1
+        """).fetchone()
+        max_monat = {"monat": max_monat_row["monat"], "verbrauch": max_monat_row["verbrauch"]} if max_monat_row else None
+
+        # Monat mit niedrigstem Verbrauch
+        logger.debug("🔍 Abfrage: Monat mit niedrigstem Verbrauch")
+        min_monat_row = cursor.execute("""
+            SELECT strftime('%Y-%m', timestamp) as monat, 
+                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            GROUP BY strftime('%Y-%m', timestamp)
+            ORDER BY verbrauch ASC
+            LIMIT 1
+        """).fetchone()
+        min_monat = {"monat": min_monat_row["monat"], "verbrauch": min_monat_row["verbrauch"]} if min_monat_row else None
+
+        # Durchschnittlicher monatlicher Verbrauch
+        logger.debug("🔍 Abfrage: Durchschnittlicher monatlicher Verbrauch")
+        avg_monat_row = cursor.execute("""
+            SELECT AVG(monatsverbrauch) as avg_verbrauch
+            FROM (
+                SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as monatsverbrauch
+                FROM messwerte
+                GROUP BY strftime('%Y-%m', timestamp)
+            )
+        """).fetchone()
+        avg_monat = avg_monat_row["avg_verbrauch"] if avg_monat_row else 0
+
+        # API-Antwort erstellen
+        response = {
+            "maxTag": max_tag,
+            "minTag": min_tag,
+            "avgTag": avg_tag,
+            "maxMonat": max_monat,
+            "minMonat": min_monat,
+            "avgMonat": avg_monat
+        }
+        logger.debug("📤 API-Antwort: %s", response)
+        return jsonify(response)
+
+    except Exception as e:
+        logger.error("❌ Fehler beim Abrufen der Statistik: %s", str(e))
+        return jsonify({"error": "Fehler beim Abrufen der Statistik"}), 500
+
+    finally:
+        conn.close()
+        logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
+
 if __name__ == '__main__':
     logger.debug("🚀 Starte Flask-Server auf Port 5000...")
     app.run(host='0.0.0.0', port=5000)

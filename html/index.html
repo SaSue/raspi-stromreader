@@ -73,7 +73,7 @@
     }
 
     .value {
-      font-size: 2rem;
+      font-size: 1.5rem;
       font-weight: bold;
     }
 
@@ -140,6 +140,7 @@
     <button id="wochenstatistik-tab" onclick="showTab('wochenstatistik', this)">Wochenstatistik</button>
     <button id="monatsstatistik-tab" onclick="showTab('monatsstatistik', this)">Monatsstatistik</button>
     <button id="jahresstatistik-tab" onclick="showTab('jahresstatistik', this)">Jahresstatistik</button>
+    <button id="statistik-tab" onclick="showTab('statistik', this)">Statistik</button>
   </div>
 
   <!-- Dashboard Tab -->
@@ -218,6 +219,36 @@
     <div class="card" style="grid-column: 1 / -1">
       <div class="label">Jahresstatistik</div>
       <canvas id="jahresstatistik-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Statistik Tab -->
+  <div id="statistik" class="tab-content">
+    <div class="grid">
+      <div class="card">
+        <div class="label">Tag mit höchstem Verbrauch</div>
+        <div class="value" id="max-tag">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Tag mit niedrigstem Verbrauch</div>
+        <div class="value" id="min-tag">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Durchschnittlicher täglicher Verbrauch</div>
+        <div class="value" id="avg-tag">-- kWh</div>
+      </div>
+      <div class="card">
+        <div class="label">Monat mit höchstem Verbrauch</div>
+        <div class="value" id="max-monat">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Monat mit niedrigstem Verbrauch</div>
+        <div class="value" id="min-monat">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Durchschnittlicher monatlicher Verbrauch</div>
+        <div class="value" id="avg-monat">-- kWh</div>
+      </div>
     </div>
   </div>
 
@@ -544,6 +575,25 @@
       }
     }
 
+    async function fetchStatistik() {
+      try {
+        const response = await fetch('/api/statistik');
+        const data = await response.json();
+
+        // Tagesstatistik
+        document.getElementById('max-tag').textContent = `${data.maxTag.datum} (${data.maxTag.verbrauch.toFixed(2)} kWh)`;
+        document.getElementById('min-tag').textContent = `${data.minTag.datum} (${data.minTag.verbrauch.toFixed(2)} kWh)`;
+        document.getElementById('avg-tag').textContent = `${data.avgTag.toFixed(2)} kWh`;
+
+        // Monatsstatistik
+        document.getElementById('max-monat').textContent = `${data.maxMonat.monat} (${data.maxMonat.verbrauch.toFixed(2)} kWh)`;
+        document.getElementById('min-monat').textContent = `${data.minMonat.monat} (${data.minMonat.verbrauch.toFixed(2)} kWh)`;
+        document.getElementById('avg-monat').textContent = `${data.avgMonat.toFixed(2)} kWh`;
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Statistik:', error);
+      }
+    }
+
     function showTab(tabId, button) {
       document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
@@ -558,6 +608,7 @@
       // Daten für die Statistik-Tabs abrufen
       if (tabId === 'monatsstatistik') fetchMonatsstatistik();
       if (tabId === 'jahresstatistik') fetchJahresstatistik();
+      if (tabId === 'statistik') fetchStatistik();
     }
 
     // Daten beim Laden der Seite abrufen
