@@ -225,6 +225,8 @@
   <!-- Statistik Tab -->
   <div id="statistik" class="tab-content">
     <div class="grid">
+      <!-- Statistik für Tage -->
+      <h2>Statistik für Tage</h2>
       <div class="card">
         <div class="label">Tag mit höchstem Verbrauch</div>
         <div class="value" id="max-tag">--</div>
@@ -237,6 +239,11 @@
         <div class="label">Durchschnittlicher täglicher Verbrauch</div>
         <div class="value" id="avg-tag">-- kWh</div>
       </div>
+    </div>
+
+    <div class="grid">
+      <!-- Statistik für Monate -->
+      <h2>Statistik für Monate</h2>
       <div class="card">
         <div class="label">Monat mit höchstem Verbrauch</div>
         <div class="value" id="max-monat">--</div>
@@ -580,14 +587,25 @@
         const response = await fetch('/api/statistik');
         const data = await response.json();
 
+        // Hilfsfunktion für Datumsformatierung
+        const formatDatum = (datum) => {
+          const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+          return new Date(datum).toLocaleDateString('de-DE', options);
+        };
+
+        const formatMonat = (monat) => {
+          const [year, month] = monat.split('-');
+          return `${new Date(year, month - 1).toLocaleString('de-DE', { month: 'long' })} ${year}`;
+        };
+
         // Tagesstatistik
-        document.getElementById('max-tag').textContent = `${data.maxTag.datum} (${data.maxTag.verbrauch.toFixed(2)} kWh)`;
-        document.getElementById('min-tag').textContent = `${data.minTag.datum} (${data.minTag.verbrauch.toFixed(2)} kWh)`;
+        document.getElementById('max-tag').textContent = `${data.maxTag.verbrauch.toFixed(2)} kWh (${formatDatum(data.maxTag.datum)})`;
+        document.getElementById('min-tag').textContent = `${data.minTag.verbrauch.toFixed(2)} kWh (${formatDatum(data.minTag.datum)})`;
         document.getElementById('avg-tag').textContent = `${data.avgTag.toFixed(2)} kWh`;
 
         // Monatsstatistik
-        document.getElementById('max-monat').textContent = `${data.maxMonat.monat} (${data.maxMonat.verbrauch.toFixed(2)} kWh)`;
-        document.getElementById('min-monat').textContent = `${data.minMonat.monat} (${data.minMonat.verbrauch.toFixed(2)} kWh)`;
+        document.getElementById('max-monat').textContent = `${data.maxMonat.verbrauch.toFixed(2)} kWh (${formatMonat(data.maxMonat.monat)})`;
+        document.getElementById('min-monat').textContent = `${data.minMonat.verbrauch.toFixed(2)} kWh (${formatMonat(data.minMonat.monat)})`;
         document.getElementById('avg-monat').textContent = `${data.avgMonat.toFixed(2)} kWh`;
       } catch (error) {
         console.error('Fehler beim Abrufen der Statistik:', error);
