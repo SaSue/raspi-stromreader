@@ -28,7 +28,7 @@ for eintrag in daten:
             (eintrag["seriennummer"], eintrag["zaehlername"])
         )
         zaehler_id = cursor.lastrowid
-        print(f"💾 Neuer Zähler in SQLite gespeichert: {eintrag['seriennummer']}, {eintrag['hersteller']}")
+        print(f"💾 Neuer Zähler in SQLite gespeichert: {eintrag['seriennummer']}, {eintrag['zaehlername']}")
 
     # Messwert einfügen
     cursor.execute("""
