@@ -20,3 +20,11 @@ services:
       - "8080:80"
     volumes:
       - /var/www/html:/var/www/localhost/htdocs:ro
+
+  dashboard-backend:
+    build: ./dashboard-backend.py
+    container_name: strom-dashboard
+    ports:
+      - "5000"
+    volumes:
+      - /var/www/html/strom.sqlite:/app/data/strom.sqlite
