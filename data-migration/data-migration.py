@@ -18,19 +18,19 @@ with open(JSON_DATEI, "r", encoding="utf-8") as f:
 # Daten einfügen
 for eintrag in daten:
      # Zähler-ID abrufen oder einfügen
-    c.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (eintrag["seriennummer"]))
+    cursor.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (eintrag["seriennummer"]))
     row = c.fetchone()
     if row:
         zaehler_id = row[0]
         print("🔍 Zähler-ID gefunden: %s", zaehler_id)
     else:
-        c.execute("INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)", (eintrag["seriennummer"],eintrag["hersteller"]))
+        cursor.execute("INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)", (eintrag["seriennummer"],eintrag["hersteller"]))
         zaehler_id = c.lastrowid
         print("💾 Neuer Zähler in SQLite gespeichert: %s", (seriennummer, hersteller))
 
     # Messwert einfügen
     timestamp = datetime.now().isoformat()
-    c.execute("""
+    cursor.execute("""
         INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
         VALUES (?, ?, ?, ?, ?)
     """, (
