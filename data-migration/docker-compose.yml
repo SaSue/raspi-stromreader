@@ -7,4 +7,3 @@ services:
     volumes:
       - ./logs:/app/logs
       - /var/www/html:/app/data
-    restart: unless-stopped
