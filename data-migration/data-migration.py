@@ -14,6 +14,8 @@ cursor = conn.cursor()
 with open(JSON_DATEI, "r", encoding="utf-8") as f:
     daten = json.load(f)
 
+zaehler_id = 1  # Zähler-ID, anpassen je nach Bedarf, der Einfachheit halber fix
+
 # Daten einfügen
 for i, eintrag in enumerate(daten):  # Verwende enumerate, um den Index automatisch zu zählen
     # Messwert einfügen
