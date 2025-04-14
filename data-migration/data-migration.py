@@ -1,56 +1,75 @@
 import json
 import sqlite3
 from datetime import datetime
+from pathlib import Path
+import logging
 
-# Datei-Pfade
-JSON_DATEI = "/app/data/history/2025-04-09.json"
-DB_DATEI = "/app/data/strom.sqlite"
+# === Konfiguration ===
+DB_PATH = Path("/app/data/strom.sqlite")
+JSON_PATH = Path("/app/data/history/2025-04-09.json")
+LOG_PATH = Path("/app/data/sqlite_debug.log")
+ZAEHLER_ID = 1
 
-# Verbindung zur Datenbank
-conn = sqlite3.connect(DB_DATEI)
-cursor = conn.cursor()
+# === Verzeichnisse anlegen ===
+LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 
-# JSON-Datei laden
-with open(JSON_DATEI, "r", encoding="utf-8") as f:
-    daten = json.load(f)
+# === Logging einrichten ===
+logging.basicConfig(
+    filename=LOG_PATH,
+    level=logging.DEBUG,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S"
+)
 
-zaehler_id = 1
-anzahl_erfolgreich = 0
-anzahl_fehler = 0
+# === Verbindung zur SQLite-Datenbank herstellen ===
+try:
+    conn = sqlite3.connect(DB_PATH)
+    conn.set_trace_callback(lambda stmt: logging.debug("🟢 SQL: %s", stmt))
+    cursor = conn.cursor()
+except Exception as e:
+    logging.critical("❌ Fehler beim Verbinden mit der Datenbank: %s", str(e))
+    raise SystemExit(1)
 
+# === JSON-Datei laden ===
+try:
+    with JSON_PATH.open("r", encoding="utf-8") as f:
+        daten = json.load(f)
+except Exception as e:
+    logging.critical("❌ Fehler beim Lesen der JSON-Datei: %s", str(e))
+    conn.close()
+    raise SystemExit(1)
+
+# === Datensätze einfügen ===
+anzahl = 0
 for i, eintrag in enumerate(daten):
     try:
+        timestamp = eintrag["timestamp"].replace("Z", "")
+        bezug = float(eintrag["bezug"])
+        einspeisung = float(eintrag["einspeisung"])
+        leistung = int(eintrag["leistung"])
 
-        # Prüfung auf fehlende Felder
-        for key in ("timestamp", "bezug", "einspeisung", "leistung"):
-            if key not in eintrag or eintrag[key] is None:
-                raise ValueError(f"Feld '{key}' fehlt oder ist None")
+        logging.info("🔁 Eintrag [%d]: %s", i, timestamp)
+        logging.debug("⚙️ Werte → Bezug: %.4f, Einspeisung: %.4f, Leistung: %d", bezug, einspeisung, leistung)
 
-        print(f"🔁 Durchlauf {i} - Eintrag: {eintrag}")
-        print("⚙️ Einfügedaten:", eintrag["timestamp"], eintrag["bezug"], eintrag["einspeisung"], eintrag["leistung"])
         cursor.execute("""
             INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
             VALUES (?, ?, ?, ?, ?)
-        """, (
-            zaehler_id,
-            eintrag["timestamp"],
-            eintrag["bezug"],
-            eintrag["einspeisung"],
-            eintrag["leistung"]
-        ))
-        anzahl_erfolgreich += 1
-        print(f"✅ Gespeichert [{anzahl_erfolgreich}]: {eintrag['timestamp']}")
-        conn.commit()
+        """, (ZAEHLER_ID, timestamp, bezug, einspeisung, leistung))
+
+        anzahl += 1
+        logging.info("✅ Gespeichert [%d]: %s", anzahl, timestamp)
+
     except Exception as e:
-        conn.commit()
-    
-        anzahl_fehler += 1
-        print(f"❌ Fehler bei Eintrag {i}: {e}")
-        continue
+        logging.error("❌ Fehler beim Einfügen [%d] (%s): %s", i, timestamp, str(e))
 
-# Abschluss
-print(f"✅ Fertig. {anzahl_erfolgreich} Messwerte erfolgreich in die Datenbank übernommen.")
-if anzahl_fehler > 0:
-    print(f"⚠️  {anzahl_fehler} Einträge konnten nicht gespeichert werden.")
+# === Abschluss ===
+try:
+    conn.commit()
+    logging.info("💾 Änderungen gespeichert (%d Einträge)", anzahl)
+except Exception as e:
+    logging.error("❌ Commit-Fehler: %s", str(e))
+finally:
+    conn.close()
+    logging.info("🔒 Verbindung zur Datenbank geschlossen.")
 
-conn.close()
+print(f"✅ Fertig. {anzahl} Messwerte erfolgreich in die Datenbank übernommen.")
