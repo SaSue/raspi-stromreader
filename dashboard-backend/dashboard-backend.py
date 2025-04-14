@@ -27,6 +27,50 @@ def get_dashboard_data():
     cursor = conn.cursor()
 
     try:
+        # Momentanverbrauch
+        logger.debug("🔍 Abfrage: Momentanverbrauch")
+        leistung_row = cursor.execute("""
+            SELECT wirkleistung_watt
+            FROM messwerte
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """).fetchone()
+        leistung = leistung_row["wirkleistung_watt"] if leistung_row else 0
+
+        # Bezug gesamt
+        logger.debug("🔍 Abfrage: Bezug gesamt")
+        bezug_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) as bezug
+            FROM messwerte
+        """).fetchone()
+        bezug = bezug_row["bezug"] if bezug_row and bezug_row["bezug"] is not None else 0
+
+        # Einspeisung gesamt
+        logger.debug("🔍 Abfrage: Einspeisung gesamt")
+        einspeisung_row = cursor.execute("""
+            SELECT MAX(einspeisung_kwh) as einspeisung
+            FROM messwerte
+        """).fetchone()
+        einspeisung = einspeisung_row["einspeisung"] if einspeisung_row and einspeisung_row["einspeisung"] is not None else 0
+
+        # Verbrauch heute
+        logger.debug("🔍 Abfrage: Verbrauch heute")
+        verbrauch_heute_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            WHERE DATE(timestamp) = DATE('now')
+        """).fetchone()
+        verbrauch_heute = verbrauch_heute_row["verbrauch"] if verbrauch_heute_row and verbrauch_heute_row["verbrauch"] is not None else 0
+
+        # Verbrauch gestern
+        logger.debug("🔍 Abfrage: Verbrauch gestern")
+        verbrauch_gestern_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            WHERE DATE(timestamp) = DATE('now', '-1 day')
+        """).fetchone()
+        verbrauch_gestern = verbrauch_gestern_row["verbrauch"] if verbrauch_gestern_row and verbrauch_gestern_row["verbrauch"] is not None else 0
+
         # Max, Min und Durchschnitt für heute
         logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
         heute_stats = cursor.execute("""
@@ -59,6 +103,11 @@ def get_dashboard_data():
 
         # Daten als JSON zurückgeben
         response = {
+            "leistung": leistung,
+            "bezug": bezug,
+            "einspeisung": einspeisung,
+            "verbrauchHeute": verbrauch_heute,
+            "verbrauchGestern": verbrauch_gestern,
             "maxHeute": max_heute,
             "minHeute": min_heute,
             "avgHeute": avg_heute,

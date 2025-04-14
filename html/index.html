@@ -296,11 +296,13 @@
     }
 
     function aktualisiereAnzeige(aktuell) {
+      // Tagesverbrauch heute
       document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
       document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
       document.getElementById("minHeute").textContent = `${aktuell.minHeute || '--'} W`;
       document.getElementById("avgHeute").textContent = `${(aktuell.avgHeute || 0).toFixed(2)} W`;
 
+      // Tagesverbrauch gestern
       document.getElementById("verbrauchGestern").textContent = `${(aktuell.verbrauchGestern || 0).toFixed(2)} kWh`;
       document.getElementById("maxGestern").textContent = `${aktuell.maxGestern || '--'} W`;
       document.getElementById("minGestern").textContent = `${aktuell.minGestern || '--'} W`;
