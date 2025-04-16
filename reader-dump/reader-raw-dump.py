@@ -4,7 +4,7 @@ import os
 
 PORT = "/dev/ttyUSB0"      # ggf. anpassen
 BAUDRATE = 9600
-LOGFILE = "strom_raw_dump.log"
+LOGFILE = "/app/data/log/strom_raw_dump.log"
 
 def dump_serial():
     try:
