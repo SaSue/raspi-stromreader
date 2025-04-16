@@ -1,9 +1,6 @@
 # Verwende das offizielle NGINX Alpine-Image
 FROM nginx:alpine
 
-# Maintainer (optional)
-LABEL maintainer="dein.name@example.com"
-
 # Eigene nginx.conf ins Image kopieren (überschreibt Standard)
 COPY nginx.conf /etc/nginx/nginx.conf
 
