@@ -330,7 +330,7 @@
       document.getElementById("avgGestern").textContent = `${(aktuell.avgGestern || 0).toFixed(2)} W`;
     }
 
-    function renderGauge(wert) {
+    function renderGauge(wert, maxWertHeute) {
       const ctx = document.getElementById("gauge").getContext("2d");
 
       // Falls das Gauge bereits existiert, zerstöre es, um es neu zu rendern
@@ -393,7 +393,7 @@
         aktualisiereAnzeige(data);
 
         // Gauge-Diagramm rendern
-        renderGauge(data.leistung || 0); // Falls kein Wert vorhanden ist, Standardwert 0
+        renderGauge(data.leistung || 0, data.maxHeute || 5000); // Falls kein Wert vorhanden ist, Standardwert 0
 
         // Letzte Aktualisierung anzeigen
         const now = new Date();
