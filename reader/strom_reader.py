@@ -46,6 +46,23 @@ CREATE TABLE IF NOT EXISTS messwerte (
     FOREIGN KEY (zaehler_id) REFERENCES zaehler(id)
 )
 """)
+
+# Prüfen, ob der Index existiert
+c.execute("""
+SELECT name 
+FROM sqlite_master 
+WHERE type='index' AND name='idx_timestamp';
+""")
+index_exists = c.fetchone()
+
+if not index_exists:
+    logging.debug("🔍 Index 'idx_timestamp' existiert nicht. Erstelle Index...")
+    c.execute("CREATE INDEX idx_timestamp ON messwerte(timestamp);")
+    logging.debug("✅ Index 'idx_timestamp' wurde erstellt.")
+else:
+    logging.debug("✅ Index 'idx_timestamp' existiert bereits.")
+
+
 conn.commit()
 conn.close()
 
