@@ -5,7 +5,7 @@ import logging
 
 PORT = "/dev/ttyUSB0"      # ggf. anpassen
 BAUDRATE = 9600
-LOGFILE = "/app/data/log/strom_raw_dump.log"
+LOGFILE = "/app/data/logs/strom_raw_dump.log"
 
 # Logging konfigurieren
 logging.basicConfig(
