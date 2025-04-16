@@ -26,7 +26,8 @@ cp -v html/*.* /var/www/html
 sed -i 's/DEBUG=1/DEBUG=0/' docker-compose.yml
 
 # Container neu bauen und starten
-cd $REPO_DIR
+cd $REPO_DIR/dashboard
 echo "Baue Docker-Container neu..."
 docker compose build
 docker compose up -d
+
