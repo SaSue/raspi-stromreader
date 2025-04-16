@@ -49,15 +49,15 @@ case $AUSWAHL in
         cd $REPO_DIR/dashboard
         echo "Dashboard wird gebaut..."
         echo "Baue Docker-Container neu..."
-        docker compose build
-        docker compose up -d
+        sudo docker compose build
+        sudo docker compose up -d
         ;;
     2)
         cd $REPO_DIR/reader   
         echo "Reader wird gebaut..."
         echo "Baue Docker-Container neu..."
-        docker compose build
-        docker compose up -d
+        sudo docker compose build
+        sudo docker compose up -d
         ;;
     *)
         echo "Ungültige Auswahl. Bitte 1 oder 2 eingeben."
