@@ -337,9 +337,7 @@
       if (window.gaugeChart) {
         window.gaugeChart.destroy();
       }
-      // Standardwert für maxWertHeute, falls er nicht definiert ist
-      maxWertHeute = maxWertHeute || 5000; // Fallback auf 5000, falls kein Wert vorhanden
-
+      
       // Neues Gauge-Diagramm erstellen
       window.gaugeChart = new Chart(ctx, {
         type: "doughnut",
