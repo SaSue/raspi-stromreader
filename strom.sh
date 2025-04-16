@@ -48,7 +48,7 @@ case $AUSWAHL in
         docker compose up -d
         ;;
     2)
-        cd $REPO_DIR/reaeder   
+        cd $REPO_DIR/reader   
         echo "Reader wird gebaut..."
         echo "Baue Docker-Container neu..."
         docker compose build
