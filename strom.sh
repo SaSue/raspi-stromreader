@@ -33,7 +33,6 @@ fi
 
 # sh ausführbar machen
 
-cd "$REPO_DIR" || exit 1
 chmod +x $REPO_DIR/strom.sh
 
 # Auswahl ausführen
