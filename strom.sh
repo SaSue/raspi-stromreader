@@ -15,7 +15,13 @@ if [ -d "$REPO_DIR/.git" ]; then
     echo "Wechsle zu bestehendem Repo unter $REPO_DIR"
     cd "$REPO_DIR" || exit 1
 
-    echo "Hole neueste Änderungen von GitHub..."
+    echo "Hole neueste Änderungen und setze lokale Änderungen zurück..."
+
+    # Alle lokalen Änderungen verwerfen
+    git fetch origin
+    git reset --hard origin/"$BRANCH"
+    git clean -fd
+
     git fetch origin
     git checkout "$BRANCH"
     git pull origin "$BRANCH"
@@ -28,7 +34,7 @@ fi
 # sh ausführbar machen
 
 cd "$REPO_DIR" || exit 1
-chmod +x ./raspi-stromreader/strom.sh
+chmod +x $REPO_DIR/strom.sh
 
 # Auswahl ausführen
 case $AUSWAHL in
