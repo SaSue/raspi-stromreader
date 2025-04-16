@@ -1,6 +1,6 @@
 services:
 
-  strom-reader:
+  strom-reader-raw_dump:
     build: .
     container_name: strom-reader-raw-dump
     devices:
