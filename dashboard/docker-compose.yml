@@ -1,0 +1,23 @@
+services:
+
+  strom-dashboard-frontend:
+    build: ./nginx
+    container_name: strom-dashboard-frontend
+    ports:
+      - "80:80"
+    networks:
+      - strom-network
+
+  dashboard-backend:
+    build: ./dashboard-backend
+    container_name: strom-dashboard-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - /var/www/html/strom.sqlite:/app/data/strom.sqlite
+    networks:
+      - strom-network
+
+networks:
+  strom-network:
+    driver: bridge
