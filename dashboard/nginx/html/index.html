@@ -171,6 +171,9 @@
       <div class="card">
         <div class="label">Momentanverbrauch</div>
         <div class="value" id="leistung">-- W</div>
+        <div class="details" id="timestamp-leistung" style="font-size: 0.8rem; color: var(--text-light);">
+          --.--.---- / --:--
+        </div>
         <canvas id="gauge"></canvas>
       </div>
       <div class="card">
@@ -342,6 +345,16 @@
     function aktualisiereAnzeige(aktuell) {
       // Momentanverbrauch
       document.getElementById("leistung").textContent = `${aktuell.leistung || '--'} W`;
+
+      // Timestamp für Momentanverbrauch
+      const timestampElement = document.getElementById("timestamp-leistung");
+      if (aktuell.timestamp) {
+        const timestamp = new Date(aktuell.timestamp);
+        const options = { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        timestampElement.textContent = timestamp.toLocaleString('de-DE', options);
+      } else {
+        timestampElement.textContent = '--.--.---- / --:--';
+      }
 
       // Bezug gesamt
       document.getElementById("bezug").textContent = `${(aktuell.bezug || 0).toFixed(2)} kWh`;
