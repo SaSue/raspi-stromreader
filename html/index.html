@@ -210,8 +210,40 @@
   <div id="tagesdaten" class="tab-content">
     <div class="card">
       <div class="label">Datum auswählen</div>
-      <input type="date" id="datum-auswahl" onchange="fetchTagesdaten()" />
+      <input type="date" id="datum-auswahl" onchange="fetchTagesdaten()" disabled/>
     </div>
+  
+  <script>
+  async function ladeVerfuegbareTage() {
+    try {
+      const response = await fetch('/api/verfuegbare-tage');
+      const verfuegbareTage = await response.json();
+
+      if (verfuegbareTage.length === 0) {
+        console.warn('Keine verfügbaren Tage gefunden.');
+        return;
+      }
+
+      // Min- und Max-Werte für das Date-Input setzen
+      const dateInput = document.getElementById('datum-auswahl');
+      dateInput.min = verfuegbareTage[0]; // Erster verfügbarer Tag
+      dateInput.max = verfuegbareTage[verfuegbareTage.length - 1]; // Letzter verfügbarer Tag
+
+      // Nur verfügbare Tage aktivieren
+      dateInput.disabled = false;
+
+      // Optional: Standardwert setzen (z. B. auf den letzten verfügbaren Tag)
+      dateInput.value = verfuegbareTage[verfuegbareTage.length - 1];
+      fetchTagesdaten(); // Daten für den Standardwert abrufen
+    } catch (error) {
+      console.error('Fehler beim Laden der verfügbaren Tage:', error);
+    }
+  }
+
+  // Lade die verfügbaren Tage beim Laden der Seite
+  ladeVerfuegbareTage();
+</script>
+
     <div class="card">
       <div class="label">Tagesverbrauch gesamt</div>
       <div class="value" id="tagesverbrauch">-- kWh</div>
