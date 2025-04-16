@@ -25,6 +25,11 @@ else
     cd "$REPO_DIR" || exit 1
 fi
 
+# sh ausführbar machen
+
+cd "$REPO_DIR" || exit 1
+chmod +x ./docker/reader.sh
+
 # Auswahl ausführen
 case $AUSWAHL in
     1)
