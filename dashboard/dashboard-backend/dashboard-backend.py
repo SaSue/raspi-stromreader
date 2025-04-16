@@ -30,12 +30,13 @@ def get_dashboard_data():
         # Momentanverbrauch
         logger.debug("🔍 Abfrage: Momentanverbrauch")
         leistung_row = cursor.execute("""
-            SELECT wirkleistung_watt
+            SELECT wirkleistung_watt, timestamp
             FROM messwerte
             ORDER BY timestamp DESC
             LIMIT 1
         """).fetchone()
         leistung = leistung_row["wirkleistung_watt"] if leistung_row else 0
+        letzter_timestamp = leistung_row["timestamp"] if leistung_row else None
 
         # Bezug gesamt
         logger.debug("🔍 Abfrage: Bezug gesamt")
@@ -104,6 +105,7 @@ def get_dashboard_data():
         # Daten als JSON zurückgeben
         response = {
             "leistung": leistung,
+            "timestamp": letzter_timestamp,
             "bezug": bezug,
             "einspeisung": einspeisung,
             "verbrauchHeute": verbrauch_heute,
