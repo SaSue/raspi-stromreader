@@ -12,7 +12,7 @@ services:
     build: ./dashboard-backend
     container_name: strom-dashboard-backend
     ports:
-      - "5000:5000"
+      - "5000"
     volumes:
       - /var/www/html/strom.sqlite:/app/data/strom.sqlite
     networks:
