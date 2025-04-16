@@ -337,6 +337,8 @@
       if (window.gaugeChart) {
         window.gaugeChart.destroy();
       }
+      // Standardwert für maxWertHeute, falls er nicht definiert ist
+      maxWertHeute = maxWertHeute || 5000; // Fallback auf 5000, falls kein Wert vorhanden
 
       // Neues Gauge-Diagramm erstellen
       window.gaugeChart = new Chart(ctx, {
@@ -344,7 +346,7 @@
         data: {
           labels: ["Verbrauch", "Rest"],
           datasets: [{
-            data: [wert, 5000 - wert], // Wert und Restkapazität
+            data: [wert, gauge - wert], // Wert und Restkapazität
             backgroundColor: ["#fffb00", "#444"], // Farben für Verbrauch und Rest
             borderWidth: 0
           }]
