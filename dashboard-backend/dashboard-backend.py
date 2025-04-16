@@ -309,6 +309,34 @@ def get_jahresstatistik():
     finally:
         conn.close()
         logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
+        
+@app.route('/api/verfuegbare-tage', methods=['GET'])
+def get_verfuegbare_tage():
+    logger.debug("📊 API-Aufruf: /api/verfuegbare-tage")
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        # Abrufen der Tage, für die Messwerte vorhanden sind
+        logger.debug("🔍 Abfrage: Verfügbare Tage mit Messwerten")
+        tage = cursor.execute("""
+            SELECT DISTINCT DATE(timestamp) as datum
+            FROM messwerte
+            ORDER BY datum ASC
+        """).fetchall()
+
+        # Daten in ein JSON-kompatibles Format umwandeln
+        tage_data = [row["datum"] for row in tage]
+        logger.debug("📊 Verfügbare Tage: %s", tage_data)
+        return jsonify(tage_data)
+
+    except Exception as e:
+        logger.error("❌ Fehler beim Abrufen der verfügbaren Tage: %s", str(e))
+        return jsonify({"error": "Fehler beim Abrufen der verfügbaren Tage"}), 500
+
+    finally:
+        conn.close()
+        logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
 
 @app.route('/api/statistik', methods=['GET'])
 def get_statistik():
