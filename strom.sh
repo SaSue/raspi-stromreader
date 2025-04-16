@@ -28,7 +28,7 @@ fi
 # sh ausführbar machen
 
 cd "$REPO_DIR" || exit 1
-chmod +x ./docker/reader.sh
+chmod +x ./raspi-stromreader/strom.sh
 
 # Auswahl ausführen
 case $AUSWAHL in
