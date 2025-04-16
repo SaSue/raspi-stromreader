@@ -42,11 +42,14 @@ case $AUSWAHL in
 
         # Container neu bauen und starten
         cd $REPO_DIR/dashboard
+        echo "Dashboard wird gebaut..."
         echo "Baue Docker-Container neu..."
         docker compose build
         docker compose up -d
         ;;
     2)
+        cd $REPO_DIR/reaeder   
+        echo "Reader wird gebaut..."
         echo "Baue Docker-Container neu..."
         docker compose build
         docker compose up -d
