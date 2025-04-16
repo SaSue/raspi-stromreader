@@ -1,12 +1,10 @@
 services:
 
   strom-dashboard-frontend:
-    build: ./lighttpd
+    build: ./nginx
     container_name: strom-dashboard-frontend
     ports:
-      - "8080:80"
-    volumes:
-      - /var/www/html:/var/www/localhost/htdocs:ro
+      - "80:80"
     networks:
       - strom-network
 
