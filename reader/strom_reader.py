@@ -134,8 +134,7 @@ class OBIS_Object:
         self.wert = wert
 
 class OBIS_Unterobject:
-    def __init__(self, start, offset, laenge):
-        self.start = start
+    def __init__(self, offset, laenge):
         self.offset = offset
         self.laenge = laenge    
 
