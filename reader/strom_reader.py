@@ -31,6 +31,9 @@ logging.debug("os.getenv('DEBUG'): %s", os.getenv('DEBUG'))
 logging.debug("debug_env: %s", debug_env)
 logging.debug("debug_mode: %s", debug_mode)
 
+logging.info("Debug-Modus: %s", "Aktiviert" if debug_mode else "Deaktiviert")
+
+# Umgebungsvariablen laden
 # Übernehme die Umgebungsvariable OUTPUT
 output_modes = os.getenv("OUTPUT", "sqlite").lower().split(",")
 logging.info("📤 Ausgabemodi: %s", output_modes)

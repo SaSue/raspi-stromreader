@@ -4,15 +4,15 @@ services:
     build: .
     container_name: strom-reader
     devices:
-      - "/dev/ttyUSB0:/dev/ttyUSB0"
+      - "/dev/ttyUSB0:/dev/ttyUSB0" # Hier den Port des Readers anpassen, nur den am hostsystem 
     volumes:
       - ./logs:/app/logs
       - /var/www/html:/app/data
     environment:
-      - TZ=Europe/Berlin
+      - TZ=Europe/Berlin # sonst wird die Zeit nicht richtig angezeigt
       - BAUDRATE=9600 # Baudrate des Readers
       - MANUFACTORER=1 # 1 = EMH, 2 und höher aktuell nicht implementiert
-      - DEBUG=0
+      - DEBUG=0 # 1 = Debug-Mode, 0 = normaler Mode - ACHTUNG: Debug-Mode ist sehr gesprächig
       - WAIT-TIMER=60 # seconds, aller wieviele Sekunden soll der Reader die Daten schreiben
       - OUTPUT=sqlite # json,sqlite - kommagetrennt, mehrere Ausgabeformate werden in Zukunft implementiert
     restart: unless-stopped
