@@ -1,1 +1,61 @@
+# README: Einrichtung und Nutzung des Projekts
 
+Dieses Projekt dient zur Verwaltung und Analyse von Stromdaten. Es bietet drei Hauptfunktionen: das Bauen des Dashboards, das Bauen des Readers und das Starten eines Dumps des Leseroutputs.
+
+## Einrichtung
+
+### 1. Skript strom.sh anlegen
+Das Skript strom.sh ist das zentrale Steuerungsskript für das Projekt. Es muss im Projektverzeichnis erstellt werden. Der Inhalt des Skripts ist bereits im Repository enthalten.
+
+### 2. Skript ausführbar machen
+Damit das Skript ausgeführt werden kann, muss es ausführbar gemacht werden. Führe dazu folgenden Befehl im Terminal aus:
+
+```bash
+chmod +x strom.sh
+```
+
+### 3. Skript ausführen
+Das Skript kann nun gestartet werden:
+
+```bash
+./strom.sh
+```
+
+## Nutzung
+
+Nach dem Start des Skripts wird ein Auswahlmenü angezeigt. Es stehen drei Optionen zur Verfügung:
+
+### Option 1: Dashboard bauen
+Das Dashboard ist die Benutzeroberfläche zur Visualisierung der Stromdaten. Es zeigt Informationen wie den aktuellen Stromverbrauch, historische Daten und Statistiken an. Diese Option führt folgende Schritte aus:
+- Kopiert die HTML-Dateien ins Webverzeichnis (`/var/www/html`).
+- Stellt sicher, dass `DEBUG=0` in der `docker-compose.yml` gesetzt ist.
+- Baut die Docker-Container für das Dashboard neu und startet sie im Hintergrund.
+
+### Option 2: Reader bauen
+Der Reader ist für das Auslesen der Stromdaten von einem Zähler verantwortlich. Er sammelt die Daten und speichert sie in der Datenbank. Diese Option führt folgende Schritte aus:
+- Wechselt in das Verzeichnis reader.
+- Baut die Docker-Container für den Reader neu und startet sie im Hintergrund.
+
+### Option 3: Dump des Leseroutputs
+Der Dump des Leseroutputs dient dazu, die Rohdaten des Zählers direkt auszulesen und anzuzeigen. Dies ist nützlich für Debugging-Zwecke oder zur Analyse der Rohdaten. Diese Option führt folgende Schritte aus:
+- Wechselt in das Verzeichnis reader-dump.
+- Baut die Docker-Container für den Dump neu und startet sie im Vordergrund (ohne `-d`), sodass die Ausgabe direkt im Terminal sichtbar ist.
+
+## Hinweise
+- Stelle sicher, dass Docker und Docker Compose auf deinem System installiert und korrekt konfiguriert sind.
+- Das Skript aktualisiert automatisch das Repository, indem es Änderungen vom angegebenen Git-Branch (`main` standardmäßig) abruft.
+
+## Beispielausgabe
+Nach dem Start des Skripts wird folgendes Menü angezeigt:
+
+```plaintext
+Bitte wählen Sie eine Option:
+1 = Dashboard bauen
+2 = Reader bauen
+3 = Dump des Leseroutputs
+Ihre Auswahl:
+```
+
+Wähle die gewünschte Option durch Eingabe von `1`, `2` oder `3` und drücke Enter.
+
+Viel Erfolg bei der Nutzung des Projekts! 🚀
