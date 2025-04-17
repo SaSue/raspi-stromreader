@@ -11,8 +11,8 @@ services:
     environment:
       - BAUDRATE=9600 # Baudrate des Readers
       - MANUFACTORER=1 # 1 = EMH, 2 und höher aktuell nicht implementiert
-      - DEBUG=0
+      - DEBUG=1
       - WAIT-TIMER=60 # seconds, aller wieviele Sekunden soll der Reader die Daten schreiben
-      - OUTPUT=sqlite # json, sqlite - mehrere Ausgabeformate werden in Zukunft implementiert
+      - OUTPUT=sqlite,json # json, sqlite - mehrere Ausgabeformate werden in Zukunft implementiert
     restart: unless-stopped
     tty: true
