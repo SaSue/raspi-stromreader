@@ -13,6 +13,6 @@ services:
       - MANUFACTORER=1 # 1 = EMH, 2 und höher aktuell nicht implementiert
       - DEBUG=0
       - WAIT-TIMER=60 # seconds, aller wieviele Sekunden soll der Reader die Daten schreiben
-      - OUTPUT=json,sqlite # json, sqlite - mehrere Ausgabeformate werden in Zukunft implementiert
+      - OUTPUT=sqlite # json, sqlite - mehrere Ausgabeformate werden in Zukunft implementiert
     restart: unless-stopped
     tty: true
