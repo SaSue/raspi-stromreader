@@ -27,8 +27,7 @@ Nach dem Start des Skripts wird ein Auswahlmenü angezeigt. Es stehen drei Optio
 
 ### Option 1: Dashboard bauen
 Das Dashboard ist die Benutzeroberfläche zur Visualisierung der Stromdaten. Es zeigt Informationen wie den aktuellen Stromverbrauch, historische Daten und Statistiken an. Diese Option führt folgende Schritte aus:
-- Kopiert die HTML-Dateien ins Webverzeichnis (`/var/www/html`).
-- Stellt sicher, dass `DEBUG=0` in der `docker-compose.yml` gesetzt ist.
+- Wechselt in das Verzeichnis dashboard
 - Baut die Docker-Container für das Dashboard neu und startet sie im Hintergrund.
 
 ### Option 2: Reader bauen
