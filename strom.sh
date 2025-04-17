@@ -39,11 +39,6 @@ chmod +x $REPO_DIR/strom.sh
 case $AUSWAHL in
     1)
         echo "Dashboard wird gebaut..."
-        # Dateien ins Webverzeichnis kopieren
-        cp -v html/*.* /var/www/html
-
-        # DEBUG=0 setzen
-        sed -i 's/DEBUG=1/DEBUG=0/' docker-compose.yml
 
         # Container neu bauen und starten
         cd $REPO_DIR/dashboard
