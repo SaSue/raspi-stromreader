@@ -46,18 +46,21 @@ logging.info("⏳ Wartezeit für JSON-Speicherung (wait_time): %d Sekunden", wai
 MANUFACTURER = os.getenv("MANUFACTURER", "1")  # Standardwert 1
 logging.info("🏭 Herstellerkennung eingestellt auf: %s", MANUFACTURER)
 
-# 
-
 # Speicherpfade
 OUTPUT_PATH = Path("/app/data")
+logging.debug("📂 Speicherpfad: %s", OUTPUT_PATH)
 HISTORY_PATH = OUTPUT_PATH / "history"
 HISTORY_PATH.mkdir(parents=True, exist_ok=True)
+logging.debug("📂 Historie-Pfad: %s", HISTORY_PATH)
 
 # SQLite-Datei definieren
 DB_PATH = Path("/app/data/strom.sqlite")
-
+logging.debug("📂 SQLite-Pfad: %s", DB_PATH
+              )
 # Sicherstellen, dass die Datenbank existiert
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+logging.debug("📂 SQLite-Datenbankverzeichnis erstellt: %s", DB_PATH.parent)
+
 conn = sqlite3.connect(DB_PATH)
 c = conn.cursor()
 
