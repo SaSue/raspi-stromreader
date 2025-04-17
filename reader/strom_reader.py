@@ -306,56 +306,56 @@ if MANUFACTURER == "1": # EMH
             factor=None, # SN hat keinen Faktor
             einheit=None, # SN hat keine Einheit
             wert=OBIS_Unterobject (
-                11,  # Offset nach der Startposition
-                11   # Länge nach dem Offset
+                offset=11,  # Offset nach der Startposition
+                laenge=11   # Länge nach dem Offset
             )
         ),
         leistung=OBIS_Object (
             code=b"\x07\x01\x00\x10\x07\x00\xff",  # OBIS-Code für die Wirkleistung
             start=None,  # Startposition wird erst ermittelt
             factor=OBIS_Unterobject (
-                offset=21,  # Offset nach der Startposition
-                laenge=4    # Länge nach dem Offset
+                offset=19,  # Offset nach der Startposition
+                laenge=1    # Länge nach dem Offset
             ),
             einheit=OBIS_Unterobject (
                 offset=16,  # Offset nach der Startposition
                 laenge=2    # Länge nach dem Offset
             ),
             wert=OBIS_Unterobject (
-                offset=19,  # Offset nach der Startposition
-                laenge=1    # Länge nach dem Offset
+                offset=21,  # Offset nach der Startposition
+                laenge=4    # Länge nach dem Offset
             )
         ),
         bezug=OBIS_Object (
             code=b"\x07\x01\x00\x01\x08\x00\xff",  # OBIS-Code für den Bezug
             start=None,  # Startposition wird erst ermittelt
             factor=OBIS_Unterobject (
-                offset=21,  # Offset nach der Startposition
-                laenge=4    # Länge nach dem Offset
+                offset=22,  # Offset nach der Startposition
+                laenge=1    # Länge nach dem Offset
             ),
             einheit=OBIS_Unterobject (
-                offset=16,  # Offset nach der Startposition
+                offset=19,  # Offset nach der Startposition
                 laenge=2    # Länge nach dem Offset
             ),
             wert=OBIS_Unterobject (
-                offset=19,  # Offset nach der Startposition
-                laenge=1    # Länge nach dem Offset
+                offset=24,  # Offset nach der Startposition
+                laenge=8    # Länge nach dem Offset
             )
         ),
         einspeisung=OBIS_Object (
             code=b"\x07\x01\x00\x02\x08\x00\xff",  # OBIS-Code für die Einspeisung
             start=None,  # Startposition wird erst ermittelt
             factor=OBIS_Unterobject (
-                offset=21,  # Offset nach der Startposition
-                laenge=4    # Länge nach dem Offset
+                offset=19,  # Offset nach der Startposition
+                laenge=1    # Länge nach dem Offset
             ),
             einheit=OBIS_Unterobject (
                 offset=16,  # Offset nach der Startposition
                 laenge=2    # Länge nach dem Offset
             ),
             wert=OBIS_Unterobject (
-                offset=19,  # Offset nach der Startposition
-                laenge=1    # Länge nach dem Offset
+                offset=21,  # Offset nach der Startposition
+                laenge=8    # Länge nach dem Offset
             )
         ),
         sml_ende=b"\x1b\x1b\x1b\x1a"
@@ -419,11 +419,11 @@ while True:
             mein_zaehler = Zaehler(None, None, None, None, None)
 
             # OBIS Herstellerkennung und Seriennummer suchen
+            # Herstellerkennung suchen
             tech_konfiguration.hersteller.start = sml_data.find(tech_konfiguration.hersteller.code) # finde die Startposition des OBIS-Codes
             if tech_konfiguration.hersteller.start == -1:
                 logging.error("❌ OBIS-Code für Hersteller nicht gefunden.")
                 continue  # Überspringt die Verarbeitung dieses Telegramms
-            # Hersteller offset 11, laenge 4
             mein_zaehler.vendor = decode_manufacturer(
                 wert_suchen(
                     sml_data,
@@ -432,66 +432,140 @@ while True:
                     tech_konfiguration.hersteller.wert.laenge
                     ).hex())
 
-            # Seriennummer suchen 07 01 00 60 01 00 FF
-            sn_obis = OBIS_Object(b"\x07\x01\x00\x60\x01\x00\xff",0)
-            sn_obis.start = sml_data.find(sn_obis.code) # finde die Startposition des OBIS-Codes
-            if sn_obis.start == -1:
+            # Seriennummer suchen 
+            tech_konfiguration.sn.start = sml_data.find(tech_konfiguration.sn.code) # finde die Startposition des OBIS-Codes
+            if tech_konfiguration.start == -1:
                 logging.error("❌ OBIS-Code für Seriennummer nicht gefunden.")
                 continue
-            # Seriennummer parsen, offset für den EMH Leser: 11, laenge 11
-            mein_zaehler.sn = parse_device_id(wert_suchen(sml_data,sn_obis.start,11,11).hex()) 
+
+            # Seriennummer parsen
+            mein_zaehler.sn = parse_device_id(
+                wert_suchen(
+                    sml_data,
+                    tech_konfiguration.sn.start,
+                    tech_konfiguration.sn.wert.offset,
+                    tech_konfiguration.sn.wert.laenge
+                    ).hex()) 
             
             logging.debug("Hersteller / SN : %s / %s", mein_zaehler.vendor, mein_zaehler.sn)
             
-            # Bezug gesamt suchen 07 01 00 01 08 00 ff
-            bezug_obis = OBIS_Object(b"\x07\x01\x00\x01\x08\x00\xff",0)
-            bezug_obis.start = sml_data.find(bezug_obis.code)
-            if bezug_obis.start == -1:  
+            # Bezug gesamt suchen 
+            tech_konfiguration.bezug.start = sml_data.find(tech_konfiguration.bezug.code)
+            if tech_konfiguration.bezug.start == -1:  
                 logging.error("❌ OBIS-Code für Bezug nicht gefunden.")
                 continue
-            bezug = Messwert(None,None,bezug_obis.code) 
+            bezug = Messwert(None,None,tech_konfiguration.bezug.code) 
             
             bezug.wert = skalieren(
-                int(wert_suchen(sml_data,bezug_obis.start,24,8).hex(),16), # Wert Offset 24, laenge 8
-                int.from_bytes(wert_suchen(sml_data,bezug_obis.start,22,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
-             ) 
+                int(
+                    wert_suchen(
+                        sml_data,
+                        tech_konfiguration.bezug.start,
+                        tech_konfiguration.bezug.wert.offset,
+                        tech_konfiguration.bezug.wert.laenge
+                        ).hex(),16), # 
+                int.from_bytes(
+                    wert_suchen(
+                        sml_data,
+                        tech_konfiguration.bezug.start,
+                        tech_konfiguration.bezug.factor.offset,
+                        tech_konfiguration.bezug.factor.laenge 
+                    ), 
+                    byteorder="big", signed=True
+                )
+            )
 
-            bezug.einheit = einheit_suchen(wert_suchen(sml_data,bezug_obis.start,19,2)) # Einheit Offset 19, laenge 2
-            mein_zaehler.bezug = Messwert(None,None,bezug_obis.code)
+            bezug.einheit = einheit_suchen(
+                wert_suchen(
+                    sml_data,
+                    tech_konfiguration.bezug.start,
+                    tech_konfiguration.bezug.einheit.offset,
+                    tech_konfiguration.bezug.einheit.laenge
+                )
+            )
+            
+            mein_zaehler.bezug = Messwert(
+                None,
+                None,
+                bytes.fromhex(tech_konfiguration.bezug.code).decode("ascii") 
+            )
+
             mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit = convert_wh_to_kwh(bezug.wert, bezug.einheit)  #in kWh umrechnen    
-            logging.debug("Bezug %s = %s %s", bezug_obis.code.hex(), mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit)
+            logging.debug("Bezug %s = %s %s", mein_zaehler.bezug.obis, mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit)
                     
-            # Einspeisung gesamt suchen 07 01 00 02 08 00 ff
-            einspeisung_obis = OBIS_Object(b"\x07\x01\x00\x02\x08\x00\xff",0)
-            einspeisung_obis.start = sml_data.find(einspeisung_obis.code)
-            if einspeisung_obis.start == -1:
+            # Einspeisung gesamt suchen 
+            tech_konfiguration.einspeisung.start = sml_data.find(tech_konfiguration.einspeisung.code)
+            if tech_konfiguration.einspeisung.start == -1:
                 logging.error("❌ OBIS-Code für Einspeisung nicht gefunden.")
                 continue   
-            einspeisung = Messwert(None,None,einspeisung_obis.code)
+            
+            einspeisung = Messwert(None,None,bytes.fromhex(tech_konfiguration.einspeisung.code).decode("ascii"))
             
             einspeisung.wert = skalieren(
-                int(wert_suchen(sml_data,einspeisung_obis.start,21,8).hex(),16), # Wert Offset 24, laenge 8
-                int.from_bytes(wert_suchen(sml_data,einspeisung_obis.start,19,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
+                int(
+                    wert_suchen(
+                        sml_data,
+                        tech_konfiguration.einspeisung.start,
+                        tech_konfiguration.einspeisung.wert.offset,
+                        tech_konfiguration.einspeisung.wert.laenge
+                    ).hex(),16), 
+                int.from_bytes(
+                    wert_suchen(
+                        sml_data,
+                        tech_konfiguration.einspeisung.start,
+                        tech_konfiguration.einspeisung.factor.offset,
+                        tech_konfiguration.einspeisung.factor.laenge
+                    ), byteorder="big", signed=True) 
              )
-            einspeisung.einheit = einheit_suchen(wert_suchen(sml_data,einspeisung_obis.start,16,2)) # Einheit Offset 19, laenge 2
-            mein_zaehler.einspeisung = Messwert(None,None,einspeisung_obis.code)
+            
+            einspeisung.einheit = einheit_suchen(
+                wert_suchen(
+                    sml_data,
+                    tech_konfiguration.einspeisung.start,
+                    tech_konfiguration.einspeisung.einheit.offset,
+                    tech_konfiguration.einspeisung.einheit.laenge
+                ))
+            
+            mein_zaehler.einspeisung = Messwert(None, None, einspeisung.obis)
             mein_zaehler.einspeisung.wert, mein_zaehler.einspeisung.einheit = convert_wh_to_kwh(einspeisung.wert, einspeisung.einheit)
-            logging.debug("Einspeisung %s = %s %s", einspeisung_obis.code.hex(), mein_zaehler.einspeisung.wert, mein_zaehler.einspeisung.einheit)
+            logging.debug("Einspeisung %s = %s %s", mein_zaehler.einspeisung.obis, mein_zaehler.einspeisung.wert, mein_zaehler.einspeisung.einheit)
 
-            # Wirkleistung gesamt suchen 07 01 00 10 07 00 ff
-            wirk_obis = OBIS_Object(b"\x07\x01\x00\x10\x07\x00\xff",0) 
-            wirk_obis.start = sml_data.find(wirk_obis.code)
-            if wirk_obis.start == -1:
+            # Wirkleistung suchen
+            tech_konfiguration.leistung.start = sml_data.find(tech_konfiguration.leistung.code)
+            if tech_konfiguration.leistung.start == -1:
                 logging.error("❌ OBIS-Code für Wirkleistung nicht gefunden.")
                 continue
-            wirk = Messwert(None,None,wirk_obis.code)
+
+            wirk = Messwert(None,None,bytes.fromhex(tech_konfiguration.leistung.code).decode("ascii"))
+            # Wirkleistung suchen und skalieren
             wirk.wert = skalieren(
-                int(wert_suchen(sml_data,wirk_obis.start,21,4).hex(),16), # Wert Offset 21, laenge 4
-                int.from_bytes(wert_suchen(sml_data,wirk_obis.start,19,1), byteorder="big", signed=True) # Scale Offset 22, laenge 1
-             )
-            wirk.einheit = einheit_suchen(wert_suchen(sml_data,wirk_obis.start,16,2)) # Einheit Offset 16, laenge 2
-            mein_zaehler.leistung = Messwert(wirk.wert,wirk.einheit,wirk_obis.code)
-            logging.debug("Wirkleistung %s = %s %s", wirk_obis.code.hex(), mein_zaehler.leistung.wert, mein_zaehler.leistung.einheit)
+                int(
+                    wert_suchen(
+                        sml_data,
+                        tech_konfiguration.leistung.start,
+                        tech_konfiguration.leistung.wert.offset,
+                        tech_konfiguration.leistung.wert.laenge
+                    ).hex(),16), 
+                int.from_bytes(
+                    wert_suchen(
+                        sml_data,
+                        tech_konfiguration.leistung.start,
+                        tech_konfiguration.leistung.factor.offset,
+                        tech_konfiguration.leistung.factor.laenge
+                        ), byteorder="big", signed=True) 
+            )
+
+            # Wirkleistung Einheit suchen
+            wirk.einheit = einheit_suchen(
+                wert_suchen(
+                    sml_data,
+                    tech_konfiguration.leistung.start,
+                    tech_konfiguration.leistung.einheit.offset,
+                    tech_konfiguration.leistung.einheit.laenge
+                    )) 
+            
+            mein_zaehler.leistung = Messwert(wirk.wert,wirk.einheit,wirk.obis)
+            logging.debug("Wirkleistung %s = %s %s", mein_zaehler.leistung.obis, mein_zaehler.leistung.wert, mein_zaehler.leistung.einheit)
             
             current_time = time.time()
             if current_time - last_json_write >= wait_time:
