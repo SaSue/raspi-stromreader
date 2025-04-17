@@ -300,7 +300,7 @@ if MANUFACTURER == "1": # EMH
                 11,  # Offset nach der Startposition
                 4    # Länge nach dem Offset
             )
-        )
+        ),
         sn=OBIS_Object ( # Seriennummer
             code=b"\x07\x01\x00\x60\x01\x00\xff",  # OBIS-Code für die Seriennummer, wird erst ermittelt
             start=None,  # Startposition wird erst ermittelt
