@@ -434,7 +434,7 @@ while True:
 
             # Seriennummer suchen 
             tech_konfiguration.sn.start = sml_data.find(tech_konfiguration.sn.code) # finde die Startposition des OBIS-Codes
-            if tech_konfiguration.start == -1:
+            if tech_konfiguration.sn.start == -1:
                 logging.error("❌ OBIS-Code für Seriennummer nicht gefunden.")
                 continue
 
