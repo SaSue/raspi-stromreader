@@ -1,0 +1,13 @@
+services:
+
+  strom-reader-raw_dump:
+    build: .
+    container_name: strom-reader-raw-dump
+    devices:
+      - "/dev/ttyUSB0:/dev/ttyUSB0"
+    volumes:
+      - ./logs:/app/data/logs
+    environment:
+      - DEBUG=1
+    restart: none
+    tty: true

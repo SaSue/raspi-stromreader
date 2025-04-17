@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Strom-Dashboard</title>
+  <style>
+    :root {
+      --bg-light: #ffffff;
+      --bg-dark: #121212;
+      --text-light: #000000;
+      --text-dark: #f0f0f0;
+      --blue: #01b4d4;
+      --neonyellow: #a6ff00;
+      --card-bg-light: #f5f5f5;
+      --card-bg-dark: #1e1e1e;
+      --button-bg: #007bff;
+      --button-hover-bg: #0056b3;
+      --button-text: #ffffff;
+    }
+    
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: var(--bg-dark);
+        color: var(--text-dark);
+      }
+      .card {
+        background-color: var(--card-bg-dark);
+      }
+      .details {
+        color: var(--text-dark) !important; /* Erzwinge die Textfarbe für Details im Darkmode */
+      }
+      .value {
+        color: var(--text-dark); /* Textfarbe für Hauptwerte im Darkmode */
+      }
+    }
+
+    @media (prefers-color-scheme: light) {
+      body {
+        background-color: var(--bg-light);
+        color: var(--text-light);
+      }
+      .card {
+        background-color: var(--card-bg-light);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .card {
+        padding: 1rem; /* Weniger Padding für kleinere Bildschirme */
+      }
+    }
+
+    @media (min-width: 769px) {
+      #statistik .grid + .grid {
+        margin-top: 2rem; /* Abstand zwischen den Sektionen */
+      }
+    }
+
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+    }
+
+    .card {
+      border-radius: 1rem;
+      padding: 1.5rem;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      transition: transform 0.2s;
+      height: auto; /* Automatische Höhe basierend auf dem Inhalt */
+    }
+
+    .card:hover {
+      transform: translateY(-4px);
+    }
+
+    .value {
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
+    .label {
+      font-size: 1rem;
+      color: var(--blue);
+    }
+
+    canvas {
+      width: 100% !important;
+      height: auto !important;
+    }
+
+    .tab {
+      display: flex;
+      flex-wrap: wrap; /* Zeilenumbruch bei Platzmangel */
+      gap: 0.5rem; /* Abstand zwischen den Buttons */
+      justify-content: center; /* Buttons zentrieren */
+    }
+
+    .tab button {
+      flex: 1 1 auto; /* Buttons gleichmäßig verteilen */
+      max-width: 150px; /* Optionale maximale Breite für Buttons */
+      background-color: var(--button-bg);
+      color: var(--button-text);
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .tab button:hover {
+      background-color: var(--button-hover-bg);
+    }
+
+    .tab button.active {
+      background-color: var(--button-hover-bg);
+      font-weight: bold;
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    input[type="date"] {
+      font-size: 1.2rem; /* Größere Schriftgröße */
+      padding: 0.5rem 1rem; /* Mehr Innenabstand */
+      width: 100%; /* Volle Breite innerhalb der Karte */
+      max-width: 300px; /* Optionale maximale Breite */
+      border: 1px solid #ccc; /* Rahmen für bessere Sichtbarkeit */
+      border-radius: 0.5rem; /* Abgerundete Ecken */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Leichter Schatten */
+    }
+
+    .details {
+      margin-top: 1rem; /* Abstand zwischen dem Hauptwert und den Details */
+      font-size: 0.9rem; /* Optional: Schriftgröße der Details anpassen */
+      color: var(--text-light); /* Optional: Farbe der Details */
+    }
+  </style>
+</head>
+<body>
+  <h1>⚡ Strom-Dashboard</h1>
+  <div class="tab">
+    <button id="dashboard-tab" class="active" onclick="showTab('dashboard', this)">Dashboard</button>
+    <button id="tagesdaten-tab" onclick="showTab('tagesdaten', this)">Tagesdaten</button>
+    <button id="wochenstatistik-tab" onclick="showTab('wochenstatistik', this)">Wochenstatistik</button>
+    <button id="monatsstatistik-tab" onclick="showTab('monatsstatistik', this)">Monatsstatistik</button>
+    <button id="jahresstatistik-tab" onclick="showTab('jahresstatistik', this)">Jahresstatistik</button>
+    <button id="statistik-tab" onclick="showTab('statistik', this)">Statistik</button>
+  </div>
+
+  <!-- Dashboard Tab -->
+  <div id="dashboard" class="tab-content active">
+    <div class="grid">
+      <div class="card">
+        <div class="label">Momentanverbrauch</div>
+        <div class="value" id="leistung">-- W</div>
+        <div class="details" id="timestamp-leistung" style="font-size: 0.8rem; color: var(--text-light);">
+          --.--.---- / --:--
+        </div>
+        <canvas id="gauge"></canvas>
+      </div>
+      <div class="card">
+        <div class="label">Bezug</div>
+        <div class="value" id="bezug">-- kWh</div>
+      </div>
+      <div class="card">
+        <div class="label">Einspeisung</div>
+        <div class="value" id="einspeisung">-- kWh</div>
+      </div>
+      <div class="card">
+        <div class="label">Tagesverbrauch heute</div>
+        <div class="value" id="verbrauchHeute">-- kWh</div>
+        <div class="details">
+          <div>Min: <span id="minHeute">-- W</span></div>
+          <div>Max: <span id="maxHeute">-- W</span></div>
+          <div>⌀: <span id="avgHeute">-- W</span></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="label">Tagesverbrauch gestern</div>
+        <div class="value" id="verbrauchGestern">-- kWh</div>
+        <div class="details">
+          <div>Min: <span id="minGestern">-- W</span></div>
+          <div>Max: <span id="maxGestern">-- W</span></div>
+          <div>⌀: <span id="avgGestern">-- W</span></div>
+        </div>
+      </div>
+      <div class="card" style="grid-column: 1 / -1">
+        <div class="label">Tagesverlauf</div>
+        <canvas id="verlauf"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tagesdaten Tab -->
+  <div id="tagesdaten" class="tab-content">
+    <div class="card">
+      <div class="label">Datum auswählen</div>
+      <input type="date" id="datum-auswahl" onchange="fetchTagesdaten()" disabled/>
+    </div>
+  
+  <script>
+  async function ladeVerfuegbareTage() {
+    try {
+      const response = await fetch('/api/verfuegbare-tage');
+      const verfuegbareTage = await response.json();
+
+      if (verfuegbareTage.length === 0) {
+        console.warn('Keine verfügbaren Tage gefunden.');
+        return;
+      }
+
+      // Min- und Max-Werte für das Date-Input setzen
+      const dateInput = document.getElementById('datum-auswahl');
+      dateInput.min = verfuegbareTage[0]; // Erster verfügbarer Tag
+      dateInput.max = verfuegbareTage[verfuegbareTage.length - 1]; // Letzter verfügbarer Tag
+
+      // Nur verfügbare Tage aktivieren
+      dateInput.disabled = false;
+
+      // Optional: Standardwert setzen (z. B. auf den letzten verfügbaren Tag)
+      dateInput.value = verfuegbareTage[verfuegbareTage.length - 1];
+      fetchTagesdaten(); // Daten für den Standardwert abrufen
+    } catch (error) {
+      console.error('Fehler beim Laden der verfügbaren Tage:', error);
+    }
+  }
+
+  // Lade die verfügbaren Tage beim Laden der Seite
+  ladeVerfuegbareTage();
+</script>
+
+    <div class="card">
+      <div class="label">Tagesverbrauch gesamt</div>
+      <div class="value" id="tagesverbrauch">-- kWh</div>
+    </div>
+    <div class="card">
+      <div class="label">Tagesendstand</div>
+      <div class="value" id="tagesendstand">-- kWh</div>
+    </div>
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Tagesverlauf</div>
+      <canvas id="tagesverlauf"></canvas>
+    </div>
+  </div>
+
+  <!-- Wochenstatistik Tab -->
+  <div id="wochenstatistik" class="tab-content">
+    <div class="card">
+      <div class="label">Datum auswählen</div>
+      <input type="date" id="wochenstatistik-datum" onchange="fetchWochenstatistik()" />
+    </div>
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Wochenstatistik</div>
+      <canvas id="wochenstatistik-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Monatsstatistik Tab -->
+  <div id="monatsstatistik" class="tab-content">
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Monatsstatistik</div>
+      <canvas id="monatsstatistik-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Jahresstatistik Tab -->
+  <div id="jahresstatistik" class="tab-content">
+    <div class="card" style="grid-column: 1 / -1">
+      <div class="label">Jahresstatistik</div>
+      <canvas id="jahresstatistik-chart"></canvas>
+    </div>
+  </div>
+
+  <!-- Statistik Tab -->
+  <div id="statistik" class="tab-content">
+    <div class="grid">
+      <!-- Statistik für Tage -->
+      <h2>Statistik für Tage</h2>
+      <div class="card">
+        <div class="label">Tag mit höchstem Verbrauch</div>
+        <div class="value" id="max-tag">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Tag mit niedrigstem Verbrauch</div>
+        <div class="value" id="min-tag">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Durchschnittlicher täglicher Verbrauch</div>
+        <div class="value" id="avg-tag">-- kWh</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <!-- Statistik für Monate -->
+      <h2>Statistik für Monate</h2>
+      <div class="card">
+        <div class="label">Monat mit höchstem Verbrauch</div>
+        <div class="value" id="max-monat">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Monat mit niedrigstem Verbrauch</div>
+        <div class="value" id="min-monat">--</div>
+      </div>
+      <div class="card">
+        <div class="label">Durchschnittlicher monatlicher Verbrauch</div>
+        <div class="value" id="avg-monat">-- kWh</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    let tagesverlaufChart; // Variable für das Tagesverlauf-Diagramm
+    let wochenstatistikChart; // Variable für das Wochenstatistik-Diagramm
+    let monatsstatistikChart; // Variable für das Monatsstatistik-Diagramm
+    let jahresstatistikChart; // Variable für das Jahresstatistik-Diagramm
+
+    function formatDatum(date) {
+      return date.toISOString().split("T")[0];
+    }
+
+    function berechneVerbrauch(daten) {
+      if (daten.length < 2) return 0;
+      return +(daten[daten.length - 1].bezug - daten[0].bezug).toFixed(2);
+    }
+
+    function aktualisiereAnzeige(aktuell) {
+      // Momentanverbrauch
+      document.getElementById("leistung").textContent = `${aktuell.leistung || '--'} W`;
+
+      // Timestamp für Momentanverbrauch
+      const timestampElement = document.getElementById("timestamp-leistung");
+      if (aktuell.timestamp) {
+        const timestamp = new Date(aktuell.timestamp);
+        const options = { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        timestampElement.textContent = timestamp.toLocaleString('de-DE', options);
+      } else {
+        timestampElement.textContent = '--.--.---- / --:--';
+      }
+
+      // Bezug gesamt
+      document.getElementById("bezug").textContent = `${(aktuell.bezug || 0).toFixed(2)} kWh`;
+
+      // Einspeisung gesamt
+      document.getElementById("einspeisung").textContent = `${(aktuell.einspeisung || 0).toFixed(2)} kWh`;
+
+      // Tagesverbrauch heute
+      document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
+      document.getElementById("minHeute").textContent = `${aktuell.minHeute || '--'} W`;
+      document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
+      document.getElementById("avgHeute").textContent = `${(aktuell.avgHeute || 0).toFixed(2)} W`;
+
+      // Tagesverbrauch gestern
+      document.getElementById("verbrauchGestern").textContent = `${(aktuell.verbrauchGestern || 0).toFixed(2)} kWh`;
+      document.getElementById("minGestern").textContent = `${aktuell.minGestern || '--'} W`;
+      document.getElementById("maxGestern").textContent = `${aktuell.maxGestern || '--'} W`;
+      document.getElementById("avgGestern").textContent = `${(aktuell.avgGestern || 0).toFixed(2)} W`;
+    }
+
+    function renderGauge(wert, maxWertHeute) {
+      const ctx = document.getElementById("gauge").getContext("2d");
+
+      // Falls das Gauge bereits existiert, zerstöre es, um es neu zu rendern
+      if (window.gaugeChart) {
+        window.gaugeChart.destroy();
+      }
+
+      // falls kein Wert vorhanden ist, setze ihn auf 5000
+      maxWertHeute = maxWertHeute || 5000;
+      
+      // Neues Gauge-Diagramm erstellen
+      window.gaugeChart = new Chart(ctx, {
+        type: "doughnut",
+        data: {
+          labels: ["Verbrauch", "Rest"],
+          datasets: [{
+            data: [wert, maxWertHeute - wert], // Wert und Restkapazität
+            backgroundColor: ["#fffb00", "#444"], // Farben für Verbrauch und Rest
+            borderWidth: 0
+          }]
+        },
+        options: {
+          cutout: "80%", // Innerer Kreis
+          rotation: -90, // Startwinkel
+          circumference: 180, // Halbkreis
+          plugins: {
+            legend: { display: false } // Keine Legende anzeigen
+          }
+        }
+      });
+    }
+
+    function renderVerlauf(daten) {
+      if (!daten || daten.length === 0) {
+        console.error('Keine Daten für den Tagesverlauf verfügbar.');
+        return;
+      }
+      const labels = daten.map(e => new Date(e.timestamp).toLocaleTimeString());
+      const werte = daten.map(e => e.leistung);
+      new Chart(document.getElementById("verlauf"), {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: "Leistung [W]",
+            data: werte,
+            borderColor: "#00aaff",
+            fill: false
+          }]
+        },
+        options: { scales: { x: { ticks: { autoSkip: true, maxTicksLimit: 10 } } } }
+      });
+    }
+
+    async function fetchDashboardData() {
+      try {
+        const response = await fetch('/api/dashboard');
+        const data = await response.json();
+
+        // Dashboard-Daten aktualisieren
+        aktualisiereAnzeige(data);
+
+        // Gauge-Diagramm rendern
+        renderGauge(data.leistung || 0, data.maxHeute || 5000); // Falls kein Wert vorhanden ist, Standardwert 0
+
+        // Letzte Aktualisierung anzeigen
+        const now = new Date();
+        document.getElementById('last-update-text').textContent = `Letzte Aktualisierung: ${now.toLocaleString()}`;
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Dashboard-Daten:', error);
+      }
+    }
+
+    async function fetchTagesverlauf() {
+      try {
+        const response = await fetch('/api/tagesverlauf');
+        const verlaufData = await response.json();
+        renderVerlauf(verlaufData);
+      } catch (error) {
+        console.error('Fehler beim Abrufen des Tagesverlaufs:', error);
+      }
+    }
+
+    async function fetchWochenstatistik() {
+      const datum = document.getElementById('wochenstatistik-datum').value;
+      if (!datum) return;
+
+      try {
+        const response = await fetch(`/api/wochenstatistik?datum=${datum}`);
+        const data = await response.json();
+
+        const labels = data.map(entry => entry.datum);
+        const values = data.map(entry => entry.verbrauch);
+
+        const ctx = document.getElementById('wochenstatistik-chart').getContext('2d');
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (wochenstatistikChart) {
+          wochenstatistikChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        wochenstatistikChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Tagesverbrauch (kWh)',
+              data: values,
+              backgroundColor: 'rgba(40, 167, 69, 0.2)',
+              borderColor: 'rgba(40, 167, 69, 1)',
+              borderWidth: 1,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Datum'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Verbrauch (kWh)'
+                },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Wochenstatistik:', error);
+      }
+    }
+
+    async function fetchTagesdaten() {
+      const datum = document.getElementById('datum-auswahl').value;
+      if (!datum) return;
+
+      try {
+        const response = await fetch(`/api/tagesdaten?datum=${datum}`);
+        const data = await response.json();
+
+        // Tagesverbrauch und Endstand aktualisieren
+        document.getElementById('tagesverbrauch').textContent = `${data.verbrauch.toFixed(2)} kWh`;
+        document.getElementById('tagesendstand').textContent = `${data.endstand.toFixed(2)} kWh`;
+
+        // Tagesverlauf-Diagramm aktualisieren
+        const labels = data.verlauf.map(e => new Date(e.timestamp).toLocaleTimeString());
+        const werte = data.verlauf.map(e => e.leistung);
+
+        const ctx = document.getElementById('tagesverlauf').getContext('2d');
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (tagesverlaufChart) {
+          tagesverlaufChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        tagesverlaufChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Leistung [W]',
+              data: werte,
+              borderColor: '#00aaff',
+              fill: false
+            }]
+          }
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Tagesdaten:', error);
+      }
+    }
+
+    async function fetchMonatsstatistik() {
+      try {
+        const response = await fetch('/api/monatsstatistik');
+        const data = await response.json();
+
+        const labels = data.map(entry => entry.monat);
+        const values = data.map(entry => entry.verbrauch);
+
+        const ctx = document.getElementById('monatsstatistik-chart').getContext('2d');
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (monatsstatistikChart) {
+          monatsstatistikChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        monatsstatistikChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Monatlicher Verbrauch (kWh)',
+              data: values,
+              backgroundColor: 'rgba(54, 162, 235, 0.2)',
+              borderColor: 'rgba(54, 162, 235, 1)',
+              borderWidth: 1,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Monat'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Verbrauch (kWh)'
+                },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Monatsstatistik:', error);
+      }
+    }
+
+    async function fetchJahresstatistik() {
+      try {
+        const response = await fetch('/api/jahresstatistik');
+        const data = await response.json();
+
+        const labels = data.map(entry => entry.jahr);
+        const values = data.map(entry => entry.verbrauch);
+
+        const ctx = document.getElementById('jahresstatistik-chart').getContext('2d');
+
+        // Falls das Diagramm bereits existiert, zerstöre es
+        if (jahresstatistikChart) {
+          jahresstatistikChart.destroy();
+        }
+
+        // Neues Diagramm erstellen
+        jahresstatistikChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Jährlicher Verbrauch (kWh)',
+              data: values,
+              backgroundColor: 'rgba(255, 99, 132, 0.2)',
+              borderColor: 'rgba(255, 99, 132, 1)',
+              borderWidth: 1,
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+              }
+            },
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Jahr'
+                }
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Verbrauch (kWh)'
+                },
+                beginAtZero: true
+              }
+            }
+          }
+        });
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Jahresstatistik:', error);
+      }
+    }
+
+    async function fetchStatistik() {
+      try {
+        const response = await fetch('/api/statistik');
+        const data = await response.json();
+
+        // Hilfsfunktion für Datumsformatierung
+        const formatDatum = (datum) => {
+          const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+          return new Date(datum).toLocaleDateString('de-DE', options);
+        };
+
+        const formatMonat = (monat) => {
+          const [year, month] = monat.split('-');
+          return `${new Date(year, month - 1).toLocaleString('de-DE', { month: 'long' })} ${year}`;
+        };
+
+        // Tagesstatistik
+        document.getElementById('max-tag').textContent = `${data.maxTag.verbrauch.toFixed(2)} kWh (${formatDatum(data.maxTag.datum)})`;
+        document.getElementById('min-tag').textContent = `${data.minTag.verbrauch.toFixed(2)} kWh (${formatDatum(data.minTag.datum)})`;
+        document.getElementById('avg-tag').textContent = `${data.avgTag.toFixed(2)} kWh`;
+
+        // Monatsstatistik
+        document.getElementById('max-monat').textContent = `${data.maxMonat.verbrauch.toFixed(2)} kWh (${formatMonat(data.maxMonat.monat)})`;
+        document.getElementById('min-monat').textContent = `${data.minMonat.verbrauch.toFixed(2)} kWh (${formatMonat(data.minMonat.monat)})`;
+        document.getElementById('avg-monat').textContent = `${data.avgMonat.toFixed(2)} kWh`;
+      } catch (error) {
+        console.error('Fehler beim Abrufen der Statistik:', error);
+      }
+    }
+
+    function showTab(tabId, button) {
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.getElementById(tabId).classList.add('active');
+
+      document.querySelectorAll('.tab button').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      button.classList.add('active');
+
+      // Daten für die Statistik-Tabs abrufen
+      if (tabId === 'monatsstatistik') fetchMonatsstatistik();
+      if (tabId === 'jahresstatistik') fetchJahresstatistik();
+      if (tabId === 'statistik') fetchStatistik();
+    }
+
+    // Daten beim Laden der Seite abrufen
+    fetchDashboardData();
+    fetchTagesverlauf();
+
+    // Daten alle 60 Sekunden aktualisieren
+    setInterval(fetchDashboardData, 60000);
+  </script>
+</body>
+</html>
