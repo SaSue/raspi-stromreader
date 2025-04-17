@@ -297,8 +297,8 @@ if MANUFACTURER == "1": # EMH
             factor=None, # Herstellerkennung hat keinen Faktor
             einheit=None, # Herstellerkennung hat keine Einheit
             wert=OBIS_Unterobject (
-                11,  # Offset nach der Startposition
-                4    # Länge nach dem Offset
+                offset=11,  # Offset nach der Startposition
+                laenge=4    # Länge nach dem Offset
             )
         ),
         sn=OBIS_Object ( # Seriennummer
