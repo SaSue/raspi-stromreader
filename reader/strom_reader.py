@@ -487,7 +487,7 @@ while True:
             mein_zaehler.bezug = Messwert(
                 None,
                 None,
-                bytes.fromhex(tech_konfiguration.bezug.code).decode("ascii") 
+                bytes.fromhex(tech_konfiguration.bezug.code.hex()).decode("ascii") 
             )
 
             mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit = convert_wh_to_kwh(bezug.wert, bezug.einheit)  #in kWh umrechnen    
