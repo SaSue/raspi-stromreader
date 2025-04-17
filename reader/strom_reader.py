@@ -31,6 +31,11 @@ logging.debug("os.getenv('DEBUG'): %s", os.getenv('DEBUG'))
 logging.debug("debug_env: %s", debug_env)
 logging.debug("debug_mode: %s", debug_mode)
 
+# Übernehme die Umgebungsvariable OUTPUT
+output_modes = os.getenv("OUTPUT", "sqlite").lower().split(",")
+logging.info("📤 Ausgabemodi: %s", output_modes)
+
+
 # Zeitkontrolle für JSON-Speicherung
 last_json_write = 0
 wait_time = int(os.getenv("WAIT_TIMER", 60))  # Standardwert 60 Sekunden, kann aber in der .env-Datei überschrieben werden
@@ -538,7 +543,7 @@ while True:
                 continue
 
             wirk = Messwert(None,None,tech_konfiguration.leistung.code.hex())
-            
+
             # Wirkleistung suchen und skalieren
             wirk.wert = skalieren(
                 int(
@@ -587,45 +592,54 @@ while True:
                     "zaehlername": mein_zaehler.vendor
                 }
                 
-                # SQLite-Daten speichern
-                try:
-                    save_to_sqlite(
-                        mein_zaehler.sn,
-                        mein_zaehler.vendor,
-                        mein_zaehler.bezug.wert,
-                        mein_zaehler.einspeisung.wert,
-                        mein_zaehler.leistung.wert
-                    )
-                    logging.debug("💾 Daten in SQLite gespeichert")   
-                except Exception as e:
-                    logging.error("❌ Fehler beim Speichern in SQLite: %s", e)
-                
-                """
-                # JSON-Daten speichern  
-                try:
-                    # Aktuelle Datei speichern
-                    with open(OUTPUT_PATH / "strom.json", "w") as f:
-                        json.dump(output_data, f, indent=2)
-                    logging.debug("💾 JSON-Daten gespeichert (%s)", timestamp)
+                # Prüfen, ob die Umgebungsvariable OUTPUT gesetzt ist
+                # und ob sie "sqlite" enthält
+                if "sqlite" in output_modes:
+                    logging.debug("💾 Daten in SQLite speichern")           
+                    # SQLite-Daten speichern
+                    try:
+                        save_to_sqlite(
+                            mein_zaehler.sn,
+                            mein_zaehler.vendor,
+                            mein_zaehler.bezug.wert,
+                            mein_zaehler.einspeisung.wert,
+                            mein_zaehler.leistung.wert
+                        )
+                        logging.debug("💾 Daten in SQLite gespeichert")   
+                    except Exception as e:
+                        logging.error("❌ Fehler beim Speichern in SQLite: %s", e)
                     
-                  # Historie laden oder leere Liste
-                    history_file = HISTORY_PATH / f"{date_str}.json"
-                    if history_file.exists():
-                        with open(history_file, "r") as f:
-                            history_data = json.load(f)                
-                    else:
-                        history_data = []
+                # Prüfen, ob die Umgebungsvariable OUTPUT gesetzt ist
+                # und ob sie "json" enthält
+                if "json" in output_modes:
+                    logging.debug("💾 JSON-Daten speichern")
+                    # JSON-Daten speichern  
+                    try:
+                        # Aktuelle Datei speichern
+                        with open(OUTPUT_PATH / "strom.json", "w") as f:
+                            json.dump(output_data, f, indent=2)
+                        logging.debug("💾 JSON-Daten gespeichert (%s)", timestamp)
                         
-                    history_data.append(output_data)  
-                    
-                    # Historie zurückschreiben
-                    with open(history_file, "w") as f:
-                        json.dump(history_data, f, indent=2)
+                    # Historie laden oder leere Liste
+                        history_file = HISTORY_PATH / f"{date_str}.json"
+                        if history_file.exists():
+                            with open(history_file, "r") as f:
+                                history_data = json.load(f)                
+                        else:
+                            history_data = []
+                            
+                        history_data.append(output_data)  
+                        
+                        # Historie zurückschreiben
+                        with open(history_file, "w") as f:
+                            json.dump(history_data, f, indent=2)
 
+                        
+                    except Exception as e:
+                        logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
                     
-                except Exception as e:
-                    logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
-                """
+                
+                
                 last_json_write = current_time             
             else:
                 logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")

@@ -7,11 +7,12 @@ services:
       - "/dev/ttyUSB0:/dev/ttyUSB0"
     volumes:
       - ./logs:/app/logs
-      - .:/app/data
+      - /var/www/html:/app/data
     environment:
       - BAUDRATE=9600 # Baudrate des Readers
-      - MANUFACTORER=1 # 1 = EMH, 2 = Itron, 3 = Landis&Gyr 
-      - DEBUG=1
+      - MANUFACTORER=1 # 1 = EMH, 2 und höher aktuell nicht implementiert
+      - DEBUG=0
       - WAIT-TIMER=60 # seconds, aller wieviele Sekunden soll der Reader die Daten schreiben
+      - OUTPUT=json,sqlite # json, sqlite - mehrere Ausgabeformate werden in Zukunft implementiert
     restart: unless-stopped
     tty: true
