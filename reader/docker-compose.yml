@@ -7,7 +7,7 @@ services:
       - "/dev/ttyUSB0:/dev/ttyUSB0"
     volumes:
       - ./logs:/app/logs
-      - /var/www/html:/app/data
+      - .:/app/data
     environment:
       - BAUDRATE=9600 # Baudrate des Readers
       - MANUFACTORER=1 # 1 = EMH, 2 und höher aktuell nicht implementiert
