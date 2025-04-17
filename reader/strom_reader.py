@@ -487,7 +487,7 @@ while True:
             mein_zaehler.bezug = Messwert(
                 None,
                 None,
-                bytes(tech_konfiguration.bezug.code).decode("ascii") 
+                tech_konfiguration.bezug.code.hex()
             )
 
             mein_zaehler.bezug.wert, mein_zaehler.bezug.einheit = convert_wh_to_kwh(bezug.wert, bezug.einheit)  #in kWh umrechnen    
@@ -499,8 +499,9 @@ while True:
                 logging.error("❌ OBIS-Code für Einspeisung nicht gefunden.")
                 continue   
             
-            einspeisung = Messwert(None,None,bytes.fromhex(tech_konfiguration.einspeisung.code).decode("ascii"))
+            einspeisung = Messwert(None,None,tech_konfiguration.einspeisung.code.hex())
             
+            # Einspeisung suchen und skalieren
             einspeisung.wert = skalieren(
                 int(
                     wert_suchen(
@@ -536,7 +537,8 @@ while True:
                 logging.error("❌ OBIS-Code für Wirkleistung nicht gefunden.")
                 continue
 
-            wirk = Messwert(None,None,bytes.fromhex(tech_konfiguration.leistung.code).decode("ascii"))
+            wirk = Messwert(None,None,tech_konfiguration.leistung.code.hex())
+            
             # Wirkleistung suchen und skalieren
             wirk.wert = skalieren(
                 int(
