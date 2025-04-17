@@ -8,6 +8,7 @@ REPO_DIR=~/raspi-stromreader
 echo "Bitte wählen Sie eine Option:"
 echo "1 = Dashboard bauen"
 echo "2 = Reader bauen"
+echo "3 = Dump des Leseroutputs"
 read -rp "Ihre Auswahl: " AUSWAHL
 
 # Prüfen, ob das Verzeichnis existiert
@@ -32,7 +33,6 @@ else
 fi
 
 # sh ausführbar machen
-
 chmod +x $REPO_DIR/strom.sh
 
 # Auswahl ausführen
@@ -59,8 +59,16 @@ case $AUSWAHL in
         sudo docker compose build
         sudo docker compose up -d
         ;;
+    3)
+        cd $REPO_DIR/reader-dump
+        echo "Dump des Leseroutputs wird gestartet..."
+        echo "Baue Docker-Container neu..."
+        sudo docker compose build
+        echo "Starte Docker-Container im Vordergrund..."
+        sudo docker compose up
+        ;;
     *)
-        echo "Ungültige Auswahl. Bitte 1 oder 2 eingeben."
+        echo "Ungültige Auswahl. Bitte 1, 2 oder 3 eingeben."
         exit 1
         ;;
 esac
