@@ -1,1 +1,98 @@
+# README: Reader Dump (`reader-raw-dump.py`)
 
+Der `reader-raw-dump.py` ist ein Python-Skript, das Rohdaten von einem Stromzähler über eine serielle Schnittstelle ausliest und diese in einer Logdatei speichert. Dieses Skript wird in einem Docker-Container ausgeführt, um eine einfache Bereitstellung und Ausführung zu ermöglichen.
+
+---
+
+## **Funktionen**
+- **Auslesen von Rohdaten**: Das Skript liest die Rohdaten direkt von einem seriellen Port (z. B. `/dev/ttyUSB0`).
+- **Speichern der Daten**: Die ausgelesenen Daten werden in einer Logdatei gespeichert, die für Debugging- und Analysezwecke verwendet werden kann.
+- **Hex- und ASCII-Darstellung**: Die Rohdaten werden sowohl in Hexadezimal- als auch in ASCII-Form protokolliert.
+
+---
+
+## **Voraussetzungen**
+- Docker und Docker Compose müssen auf dem System installiert sein.
+- Der Zähler muss über den seriellen Port mit dem System verbunden sein.
+
+---
+
+## **Verzeichnisstruktur**
+- **`reader-raw-dump.py`**: Das Hauptskript für das Auslesen der Rohdaten.
+- **`Dockerfile`**: Definiert das Docker-Image für den Reader Dump.
+- **`docker-compose.yml`**: Konfiguriert den Docker-Container und seine Umgebung.
+
+---
+
+## **Einrichtung**
+
+### 1. **Docker-Container bauen**
+Wechsle in das Verzeichnis reader-dump und baue den Docker-Container:
+
+```bash
+docker compose build
+```
+
+### 2. **Docker-Container starten**
+Starte den Docker-Container im Vordergrund, um die Rohdaten direkt im Terminal anzuzeigen:
+
+```bash
+docker compose up
+```
+
+### 3. **Docker-Container im Hintergrund starten**
+Falls du den Container im Hintergrund ausführen möchtest, verwende:
+
+```bash
+docker compose up -d
+```
+
+---
+
+## **Konfiguration**
+
+### **Umgebungsvariablen**
+Die folgenden Umgebungsvariablen können in der `docker-compose.yml` oder direkt im Container gesetzt werden:
+- **`PORT`**: Der serielle Port, an dem der Zähler angeschlossen ist (z. B. `/dev/ttyUSB0`).
+- **`BAUDRATE`**: Die Baudrate für die serielle Kommunikation (Standard: `9600`).
+- **`LOGFILE`**: Der Pfad zur Logdatei (z. B. `/app/data/logs/strom_raw_dump.log`).
+
+### **Docker-Volumes**
+Die Logdateien werden in einem Volume gespeichert, um die Daten auch nach dem Neustart des Containers zu behalten. Beispiel in der `docker-compose.yml`:
+```yaml
+volumes:
+  - ./data:/app/data
+```
+
+---
+
+## **Logging**
+Das Skript speichert die Rohdaten in einer Logdatei, die standardmäßig unter `/app/data/logs/strom_raw_dump.log` gespeichert wird. Die Logs enthalten:
+- **Timestamp**: Zeitpunkt der Datenaufnahme.
+- **Hex-Daten**: Die Rohdaten in hexadezimaler Darstellung.
+- **ASCII-Daten**: Die Rohdaten in lesbarer ASCII-Darstellung (falls möglich).
+
+---
+
+## **Beenden des Containers**
+Um den Docker-Container zu stoppen, verwende:
+
+```bash
+docker compose down
+```
+
+---
+
+## **Fehlerbehebung**
+- **Problem: Der Container startet nicht.**
+  - Überprüfe, ob der serielle Port korrekt konfiguriert ist.
+  - Stelle sicher, dass der Benutzer Zugriff auf den seriellen Port hat (z. B. durch Hinzufügen zur Gruppe `dialout`).
+
+- **Problem: Keine Daten werden ausgelesen.**
+  - Überprüfe die Verbindung zum Zähler.
+  - Stelle sicher, dass die Baudrate korrekt ist.
+
+---
+
+## **Zusammenfassung**
+Der `reader-raw-dump.py` dient zum Auslesen und Speichern von Rohdaten eines Stromzählers. Er ist besonders nützlich für Debugging- und Analysezwecke. Durch die Verwendung von Docker ist die Bereitstellung und Ausführung des Skripts einfach und portabel.

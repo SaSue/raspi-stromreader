@@ -2,6 +2,22 @@
 
 Dieses Projekt dient zur Verwaltung und Analyse von Stromdaten. Es bietet drei Hauptfunktionen: das Bauen des Dashboards, das Bauen des Readers und das Starten eines Dumps des Leseroutputs.
 
+Detailinformationen finden sich auch in den README der einzelnen Komponenten:
+
+Detailinformationen finden sich auch in den README-Dateien der einzelnen Komponenten:
+
+Dashboard: dasboard/nginx/README
+Beschreibt die Funktionen von Nginx, das für die Bereitstellung des Dashboards und die Weiterleitung von API-Anfragen zuständig ist.
+
+Dashboard-Backend: dashboard/dashboard-backend/README
+Beschreibt die API-Endpunkte, die vom Backend bereitgestellt werden, um Daten für das Dashboard und andere Anwendungen bereitzustellen.
+
+Reader: reader/README
+Beschreibt den strom_reader.py, der für das Auslesen der Stromdaten von einem Zähler und das Speichern in einer SQLite-Datenbank verantwortlich ist.
+
+Reader Dump: reader-dump/README
+Beschreibt den reader-raw-dump.py, der Rohdaten des Zählers ausliest und in einer Logdatei speichert. Dies ist besonders nützlich für Debugging- und Analysezwecke.
+
 ## Einrichtung
 
 ### 1. Skript strom.sh anlegen

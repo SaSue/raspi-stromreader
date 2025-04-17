@@ -1,0 +1,118 @@
+# API-Endpunkte
+
+Die API bietet verschiedene Endpunkte, um Daten aus der Stromdatenbank abzurufen und zu analysieren. Hier sind die verfügbaren Endpunkte:
+
+---
+
+## **1. `/api/dashboard`**
+### **Methode:** `GET`
+
+### **Beschreibung:**
+Dieser Endpunkt liefert die aktuellen Daten für das Dashboard, einschließlich Momentanverbrauch, Gesamtbezug, Einspeisung und Statistiken für heute und gestern.
+
+### **Antwort:**
+```json
+{
+    "leistung": 1234,                // Momentanverbrauch in Watt
+    "timestamp": "2025-04-16T14:30:00", // Timestamp des letzten Messwertes
+    "bezug": 456.78,                 // Gesamtbezug in kWh
+    "einspeisung": 123.45,           // Gesamteinspeisung in kWh
+    "verbrauchHeute": 12.34,         // Verbrauch heute in kWh
+    "verbrauchGestern": 10.12,       // Verbrauch gestern in kWh
+    "maxHeute": 1500,                // Maximale Leistung heute in Watt
+    "minHeute": 500,                 // Minimale Leistung heute in Watt
+    "avgHeute": 1000.5,              // Durchschnittliche Leistung heute in Watt
+    "maxGestern": 1400,              // Maximale Leistung gestern in Watt
+    "minGestern": 400,               // Minimale Leistung gestern in Watt
+    "avgGestern": 900.3              // Durchschnittliche Leistung gestern in Watt
+}
+```
+
+---
+
+## **2. `/api/verfuegbare-tage`**
+### **Methode:** `GET`
+
+### **Beschreibung:**
+Dieser Endpunkt liefert eine Liste der Tage, für die Messwerte in der Datenbank vorhanden sind.
+
+### **Antwort:**
+```json
+[
+    "2025-04-14",
+    "2025-04-15",
+    "2025-04-16"
+]
+```
+
+---
+
+## **3. `/api/tagesdaten`**
+### **Methode:** `GET`
+
+### **Beschreibung:**
+Dieser Endpunkt liefert die Messwerte für einen bestimmten Tag.
+
+### **Parameter:**
+- `datum` (erforderlich): Das Datum im Format `YYYY-MM-DD`.
+
+### **Beispielaufruf:**
+```plaintext
+GET /api/tagesdaten?datum=2025-04-16
+```
+
+### **Antwort:**
+```json
+[
+    {
+        "timestamp": "2025-04-16T00:00:00",
+        "bezug_kwh": 123.45,
+        "einspeisung_kwh": 67.89,
+        "wirkleistung_watt": 1500
+    },
+    {
+        "timestamp": "2025-04-16T01:00:00",
+        "bezug_kwh": 124.00,
+        "einspeisung_kwh": 68.00,
+        "wirkleistung_watt": 1400
+    }
+]
+```
+
+---
+
+## **4. `/api/statistik`**
+### **Methode:** `GET`
+
+### **Beschreibung:**
+Dieser Endpunkt liefert aggregierte Statistiken (z. B. Tages-, Wochen-, Monats- oder Jahresstatistiken).
+
+### **Parameter:**
+- `typ` (erforderlich): Der Typ der Statistik (`tag`, `woche`, `monat`, `jahr`).
+
+### **Beispielaufruf:**
+```plaintext
+GET /api/statistik?typ=monat
+```
+
+### **Antwort:**
+```json
+[
+    {
+        "zeitraum": "2025-04-01",
+        "verbrauch_kwh": 300.45,
+        "einspeisung_kwh": 150.23
+    },
+    {
+        "zeitraum": "2025-04-02",
+        "verbrauch_kwh": 320.00,
+        "einspeisung_kwh": 160.00
+    }
+]
+```
+
+---
+
+## Hinweise
+- Alle Endpunkte greifen auf die SQLite-Datenbank zu und liefern die Daten im JSON-Format.
+- Stelle sicher, dass die API korrekt gestartet wurde und die Datenbank verfügbar ist, bevor du die Endpunkte aufrufst.

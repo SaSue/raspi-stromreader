@@ -1,0 +1,71 @@
+# README: Nginx im Projekt
+
+Nginx wird in diesem Projekt als Webserver und Reverse Proxy eingesetzt. Es übernimmt die Bereitstellung der Benutzeroberfläche (Dashboard) und die Weiterleitung von API-Anfragen an das Backend.
+
+---
+
+## **Funktionen von Nginx**
+
+### 1. **Bereitstellung des Dashboards**
+- Nginx dient als Webserver, um die statischen Dateien des Dashboards (z. B. `index.html`, CSS, JavaScript) auszuliefern.
+- Die Dateien befinden sich im Verzeichnis html.
+- Das Dashboard ermöglicht die Visualisierung der Stromdaten, wie z. B. Momentanverbrauch, historische Daten und Statistiken.
+
+### 2. **Reverse Proxy für die API**
+- Nginx leitet Anfragen an die API-Endpunkte (z. B. `/api/dashboard`, `/api/tagesdaten`) an das Backend weiter.
+- Das Backend (z. B. Flask) verarbeitet die Anfragen und liefert die Daten zurück, die Nginx an den Client weitergibt.
+- Dies sorgt für eine saubere Trennung zwischen Frontend (Dashboard) und Backend (API).
+
+---
+
+## **Verzeichnisstruktur**
+- **`html/`**: Enthält die statischen Dateien des Dashboards, wie `index.html`, CSS und JavaScript.
+- **`nginx.conf`**: Die Konfigurationsdatei für Nginx, die die Weiterleitung von API-Anfragen und die Bereitstellung der statischen Dateien definiert.
+
+---
+
+## **Konfigurationsübersicht**
+Die Nginx-Konfiguration (z. B. `nginx.conf`) definiert folgende wichtige Punkte:
+
+1. **Statische Dateien bereitstellen**:
+   - Die index.html wird beim Erzeuge des Docker Containers übernommen
+
+2. **API-Anfragen weiterleiten**:
+   - Anfragen, die mit `/api/` beginnen, werden an das Backend (z. B. Flask) weitergeleitet.
+   - Beispiel:
+     ```nginx
+     location /api/ {
+         proxy_pass http://backend:5000;
+         proxy_set_header Host $host;
+         proxy_set_header X-Real-IP $remote_addr;
+     }
+     ```
+
+---
+
+## **Nutzung**
+1. **Starten von Nginx**:
+   - Nginx wird über Docker gestartet. Die Konfiguration und die statischen Dateien werden automatisch eingebunden.
+   - Beispielbefehl:
+     ```bash
+     docker compose up
+     ```
+
+2. **Zugriff auf das Dashboard**:
+   - Öffne einen Browser und rufe die IP-Adresse oder den Hostnamen des Servers auf, z. B. `http://localhost`.
+
+3. **API-Endpunkte testen**:
+   - Die API-Endpunkte können über den Browser oder Tools wie `curl` oder Postman getestet werden, z. B.:
+     ```bash
+     curl http://localhost/api/dashboard
+     ```
+
+---
+
+## **Zusammenfassung**
+Nginx übernimmt in diesem Projekt folgende Aufgaben:
+- Bereitstellung der statischen Dateien des Dashboards.
+- Weiterleitung von API-Anfragen an das Backend.
+- Trennung von Frontend und Backend für eine bessere Struktur und Sicherheit.
+
+Die Konfiguration ist flexibel und kann bei Bedarf angepasst werden, um zusätzliche Anforderungen zu erfüllen.
