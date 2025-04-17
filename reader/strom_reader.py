@@ -292,8 +292,8 @@ if MANUFACTURER == "1": # EMH
         baudrate=int(os.getenv("BAUDRATE", 9600)), # Baudrate, kommt aus der Umgebungsvariable
         hersteller_env=MANUFACTURER, # Herstellerkennung, kommt aus der Umgebungsvariable
         hersteller=OBIS_Object (
-            b"\x07\x01\x00\x60\x32\x01\x01",  # OBIS-Code für den Hersteller
-            None,  # Startposition wird erst ermittelt
+            code=b"\x07\x01\x00\x60\x32\x01\x01",  # OBIS-Code für den Hersteller
+            start=None,  # Startposition wird erst ermittelt
             factor=None, # Herstellerkennung hat keinen Faktor
             einheit=None, # Herstellerkennung hat keine Einheit
             wert=OBIS_Unterobject (
@@ -302,8 +302,8 @@ if MANUFACTURER == "1": # EMH
             )
         )
         sn=OBIS_Object ( # Seriennummer
-            b"\x07\x01\x00\x60\x01\x00\xff",  # OBIS-Code für die Seriennummer, wird erst ermittelt
-            None,  # Startposition wird erst ermittelt
+            code=b"\x07\x01\x00\x60\x01\x00\xff",  # OBIS-Code für die Seriennummer, wird erst ermittelt
+            start=None,  # Startposition wird erst ermittelt
             factor=None, # SN hat keinen Faktor
             einheit=None, # SN hat keine Einheit
             wert=OBIS_Unterobject (
@@ -312,51 +312,51 @@ if MANUFACTURER == "1": # EMH
             )
         ),
         leistung=OBIS_Object (
-            b"\x07\x01\x00\x10\x07\x00\xff",  # OBIS-Code für die Wirkleistung
-            None,  # Startposition wird erst ermittelt
+            code=b"\x07\x01\x00\x10\x07\x00\xff",  # OBIS-Code für die Wirkleistung
+            start=None,  # Startposition wird erst ermittelt
             factor=OBIS_Unterobject (
-                21,  # Offset nach der Startposition
-                4    # Länge nach dem Offset
+                offset=21,  # Offset nach der Startposition
+                laenge=4    # Länge nach dem Offset
             ),
             einheit=OBIS_Unterobject (
-                16,  # Offset nach der Startposition
-                2    # Länge nach dem Offset
+                offset=16,  # Offset nach der Startposition
+                laenge=2    # Länge nach dem Offset
             ),
             wert=OBIS_Unterobject (
-                19,  # Offset nach der Startposition
-                1    # Länge nach dem Offset
+                offset=19,  # Offset nach der Startposition
+                laenge=1    # Länge nach dem Offset
             )
         ),
         bezug=OBIS_Object (
-            b"\x07\x01\x00\x01\x08\x00\xff",  # OBIS-Code für den Bezug
-            None,  # Startposition wird erst ermittelt
+            code=b"\x07\x01\x00\x01\x08\x00\xff",  # OBIS-Code für den Bezug
+            start=None,  # Startposition wird erst ermittelt
             factor=OBIS_Unterobject (
-                21,  # Offset nach der Startposition
-                4    # Länge nach dem Offset
+                offset=21,  # Offset nach der Startposition
+                laenge=4    # Länge nach dem Offset
             ),
             einheit=OBIS_Unterobject (
-                16,  # Offset nach der Startposition
-                2    # Länge nach dem Offset
+                offset=16,  # Offset nach der Startposition
+                laenge=2    # Länge nach dem Offset
             ),
             wert=OBIS_Unterobject (
-                19,  # Offset nach der Startposition
-                1    # Länge nach dem Offset
+                offset=19,  # Offset nach der Startposition
+                laenge=1    # Länge nach dem Offset
             )
         ),
         einspeisung=OBIS_Object (
-            b"\x07\x01\x00\x02\x08\x00\xff",  # OBIS-Code für die Einspeisung
-            None,  # Startposition wird erst ermittelt
+            code=b"\x07\x01\x00\x02\x08\x00\xff",  # OBIS-Code für die Einspeisung
+            start=None,  # Startposition wird erst ermittelt
             factor=OBIS_Unterobject (
-                21,  # Offset nach der Startposition
-                4    # Länge nach dem Offset
+                offset=21,  # Offset nach der Startposition
+                laenge=4    # Länge nach dem Offset
             ),
             einheit=OBIS_Unterobject (
-                16,  # Offset nach der Startposition
-                2    # Länge nach dem Offset
+                offset=16,  # Offset nach der Startposition
+                laenge=2    # Länge nach dem Offset
             ),
             wert=OBIS_Unterobject (
-                19,  # Offset nach der Startposition
-                1    # Länge nach dem Offset
+                offset=19,  # Offset nach der Startposition
+                laenge=1    # Länge nach dem Offset
             )
         ),
         sml_ende=b"\x1b\x1b\x1b\x1a"
@@ -381,7 +381,7 @@ except serial.SerialException as e:
     exit(1)
 
 # Endlosschleife zum Lesen der Daten
-logging.debug("🔄 Starte Endlosschleife zum Lesen der Daten..."
+logging.debug("🔄 Starte Endlosschleife zum Lesen der Daten...")
   
 buffer = b"" # Initialisiere den Buffer
 while True:
