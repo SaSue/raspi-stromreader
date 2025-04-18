@@ -36,6 +36,7 @@ def main():
     print("Zum Testen in strom_reader.py einfach diese Schnittstelle verwenden.")
 
     while True:
+        print(f"Schreibe {len(telegram)} Bytes in {slave_name}")
         os.write(master, telegram)
         time.sleep(args.interval)
 
