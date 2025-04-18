@@ -3,6 +3,7 @@ import os
 import pty
 import time
 import argparse
+import stat
 
 # Beispiel-Telegramm (als Hex-String), das du vorgibst
 SML_HEX = (
@@ -28,6 +29,9 @@ def main():
     slave_name = os.ttyname(slave)
 
     print(f"Virtueller Zähler läuft. Serielle Schnittstelle: {slave_name}")
+    os.chmod(slave_name, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP |
+                         stat.S_IWGRP | stat.S_IROTH | stat.S_IWOTH)
+    print(f"Rechte für {slave_name} gesetzt: rw-rw-rw-")
     print(f"Telegrammlänge: {len(telegram)} Bytes")
     print("Zum Testen in strom_reader.py einfach diese Schnittstelle verwenden.")
 
