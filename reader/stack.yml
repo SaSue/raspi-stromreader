@@ -1,0 +1,26 @@
+version: "3.8"
+
+services:
+  strom-reader:
+    image: 192.168.1.11:5000/strom-reader:latest
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    volumes:
+      - /opt/strom-reader/logs:/app/logs
+      - /var/www/html:/app/data
+    environment:
+      - TZ=Europe/Berlin
+      - BAUDRATE=9600
+      - MANUFACTORER=1
+      - DEBUG=0
+      - WAIT-TIMER=60
+      - OUTPUT=sqlite
+    deploy:
+      placement:
+        constraints:
+          - node.labels.role == strom
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 3
+        window: 30s
