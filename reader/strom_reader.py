@@ -639,13 +639,10 @@ while True:
                         # Historie zurückschreiben
                         with open(history_file, "w") as f:
                             json.dump(history_data, f, indent=2)
-
-                        
+    
                     except Exception as e:
                         logging.error("❌ Fehler beim Schreiben der JSON-Dateien: %s", e)
-                    
-                
-                
+                                 
                 last_json_write = current_time             
             else:
                 logging.debug("⏳ Warte auf nächsten Schreibzeitpunkt...")
