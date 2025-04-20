@@ -17,7 +17,7 @@ def get_db_connection():
     logger.debug("🔌 Verbindung zur SQLite-Datenbank herstellen...")
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row  # Damit die Ergebnisse als Dictionary zurückgegeben werden
-    logger.debug("✅ Verbindung hergestellt.")
+    logger.debug("✅ Verbindung erfolgreich hergestellt.")
     return conn
 
 @app.route('/api/dashboard', methods=['GET'])
