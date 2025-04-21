@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request
+from datetime import datetime
 import sqlite3
 import logging
 
@@ -72,6 +73,37 @@ def get_dashboard_data():
         """).fetchone()
         verbrauch_gestern = verbrauch_gestern_row["verbrauch"] if verbrauch_gestern_row and verbrauch_gestern_row["verbrauch"] is not None else 0
 
+        # Tendenz berechnen
+        logger.debug("🔍 Abfrage: Tendenz")
+        
+        # Aktuelle Zeit
+        jetzt = datetime.now()  
+        aktuelle_stunde = jetzt.hour
+        aktuelle_minute = jetzt.minute
+
+        # Prozentualer Anteil des Tages
+        anteil_tag = (aktuelle_stunde * 60 + aktuelle_minute) / (24 * 60) * 100
+        logger.debug("🔍 Abfrage: Prozentualer Anteil des Tages: %.2f%%", anteil_tag)
+
+        # Berechnung der Tendenz
+        verbrauch_gestern_anteil = verbrauch_gestern * (anteil_tag / 100)
+
+        if abs(verbrauch_heute - verbrauch_gestern_anteil) <= verbrauch_gestern_anteil * 0.01:
+            tendenz = "gleich"
+        elif verbrauch_heute > verbrauch_gestern_anteil * 1.01 and verbrauch_heute <= verbrauch_gestern_anteil * 1.10:
+            tendenz = "mehr"
+        elif verbrauch_heute > verbrauch_gestern_anteil * 1.10:
+            tendenz = "viel mehr"
+        elif verbrauch_heute < verbrauch_gestern_anteil * 0.99 and verbrauch_heute >= verbrauch_gestern_anteil * 0.90:
+            tendenz = "weniger"
+        elif verbrauch_heute < verbrauch_gestern_anteil * 0.90:
+            tendenz = "viel weniger"
+        else:
+            tendenz = "unbekannt"  # Fallback für unerwartete Fälle
+
+        logger.debug("🔍 Tendenz: %s", tendenz)
+        
+        
         # Max, Min und Durchschnitt für heute
         logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
         heute_stats = cursor.execute("""
@@ -109,6 +141,7 @@ def get_dashboard_data():
             "bezug": bezug,
             "einspeisung": einspeisung,
             "verbrauchHeute": verbrauch_heute,
+            "tendenz" : tendenz,
             "verbrauchGestern": verbrauch_gestern,
             "maxHeute": max_heute,
             "minHeute": min_heute,
