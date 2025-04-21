@@ -363,7 +363,8 @@
       document.getElementById("einspeisung").textContent = `${(aktuell.einspeisung || 0).toFixed(2)} kWh`;
 
       // Tagesverbrauch heute
-      document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
+      const verbrauchHeuteElement = document.getElementById("verbrauchHeute");
+      verbrauchHeuteElement.childNodes[0].textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh `;
       document.getElementById("minHeute").textContent = `${aktuell.minHeute || '--'} W`;
       document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
       document.getElementById("avgHeute").textContent = `${(aktuell.avgHeute || 0).toFixed(2)} W`;
