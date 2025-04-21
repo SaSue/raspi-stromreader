@@ -186,7 +186,7 @@
       </div>
       <div class="card">
         <div class="label">Tagesverbrauch heute</div>
-        <div class="value" id="verbrauchHeute">-- kWh</div>
+        <div class="value" id="verbrauchHeute">-- kWh <span id="tendenzSymbol"></span></div>
         <div class="details">
           <div>Min: <span id="minHeute">-- W</span></div>
           <div>Max: <span id="maxHeute">-- W</span></div>
@@ -363,10 +363,37 @@
       document.getElementById("einspeisung").textContent = `${(aktuell.einspeisung || 0).toFixed(2)} kWh`;
 
       // Tagesverbrauch heute
-      document.getElementById("verbrauchHeute").textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh`;
+      const verbrauchHeuteElement = document.getElementById("verbrauchHeute");
+      verbrauchHeuteElement.childNodes[0].textContent = `${(aktuell.verbrauchHeute || 0).toFixed(2)} kWh `;
       document.getElementById("minHeute").textContent = `${aktuell.minHeute || '--'} W`;
       document.getElementById("maxHeute").textContent = `${aktuell.maxHeute || '--'} W`;
       document.getElementById("avgHeute").textContent = `${(aktuell.avgHeute || 0).toFixed(2)} W`;
+      // Tendenz-Symbol basierend auf der Tendenz
+      const tendenzSymbolElement = document.getElementById("tendenzSymbol");
+      const tendenz = aktuell.tendenz || "unbekannt";
+      let symbol = "";
+
+      switch (tendenz) {
+        case "gleich":
+          symbol = "➖"; // Gleich
+          break;
+        case "mehr":
+          symbol = "⬆"; // Mehr
+          break;
+        case "viel mehr":
+          symbol = "⬆⬆"; // Viel mehr
+          break;
+        case "weniger":
+          symbol = "⬇"; // Weniger
+          break;
+        case "viel weniger":
+          symbol = "⬇⬇"; // Viel weniger
+          break;
+        default:
+          symbol = "❓"; // Unbekannt
+      }
+
+      tendenzSymbolElement.textContent = symbol;
 
       // Tagesverbrauch gestern
       document.getElementById("verbrauchGestern").textContent = `${(aktuell.verbrauchGestern || 0).toFixed(2)} kWh`;
