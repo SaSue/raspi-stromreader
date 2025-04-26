@@ -17,9 +17,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--debug", action="store_true", help="Aktiviere Debug-Ausgabe")
 args = parser.parse_args()
 
+# Überprüfen, ob der Debug-Modus aktiviert ist
+# Überprüfen, ob der Debug-Modus über Umgebungsvariablen aktiviert ist
+# DEBUG=1 oder DEBUG=true
+# DEBUG=0 oder DEBUG=false
 debug_env = os.getenv("DEBUG", "0").lower() in ("1", "true", "yes")
 debug_mode = args.debug or debug_env
-
+# Setze den Logging-Level basierend auf dem Debug-Modus
 logging.basicConfig(
     level=logging.DEBUG if debug_mode else logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -39,7 +43,10 @@ output_modes = os.getenv("OUTPUT", "sqlite").lower().split(",")
 logging.info("📤 Ausgabemodi: %s", output_modes)
 
 
-# Zeitkontrolle für JSON-Speicherung
+# Zeitkontrolle für JSON-Speicherung 
+# Standardwert auf 0 setzen
+# und dann auf den Wert aus environment setzen
+# wenn der Wert nicht gesetzt ist, wird der Standardwert 60 Sekunden verwendet
 last_json_write = 0
 wait_time = int(os.getenv("WAIT_TIMER", 60))  # Standardwert 60 Sekunden, kann aber in der .env-Datei überschrieben werden
 # entspricht der Zeit, die gewartet wird, bevor die JSON-Datei/Datenbank gespeichert wird
@@ -47,9 +54,9 @@ logging.info("⏳ Wartezeit für JSON-Speicherung (wait_time): %d Sekunden", wai
 
 # Hersteller aus Umgebungsvariable lesen
 MANUFACTURER = os.getenv("MANUFACTURER", "1")  # Standardwert 1
-logging.info("🏭 Herstellerkennung eingestellt auf: %s", MANUFACTURER)
+logging.info("🏭 Herstellerkennung eingestellt auf: %s", MANUFACTURER) 
 
-# Speicherpfade
+# Speicherpfade für JSON
 OUTPUT_PATH = Path("/app/data")
 logging.debug("📂 Speicherpfad: %s", OUTPUT_PATH)
 HISTORY_PATH = OUTPUT_PATH / "history"
@@ -110,6 +117,18 @@ conn.close()
 
 # Klassen für Messwerte und Zähler
 class LeserKonfiguration:
+    """
+    Konfiguration für den Leser.
+    :param port: Der serielle Port (z. B. /dev/ttyUSB0).
+    :param baudrate: Die Baudrate (z. B. 9600).
+    :param hersteller_env: Herstellerkennung aus der Umgebungsvariable.
+    :param hersteller: OBIS-Code für den Hersteller.
+    :param sn: OBIS-Code für die Seriennummer.
+    :param leistung: OBIS-Code für die Wirkleistung.
+    :param bezug: OBIS-Code für den Bezug.
+    :param einspeisung: OBIS-Code für die Einspeisung.
+    :param sml_ende: Endezeichen für das SML-Telegramm.
+    """
     def __init__(self, port, baudrate, hersteller_env, hersteller, sn, leistung, bezug, einspeisung, sml_ende):
         self.port = port
         self.baudrate = baudrate
@@ -123,12 +142,26 @@ class LeserKonfiguration:
 
 #hier geht es dann weiter
 class Messwert:
+    """
+    Klasse für Messwerte.
+    :param wert: Der Wert des Messwerts.
+    :param einheit: Die Einheit des Messwerts.
+    :param obis: Der OBIS-Code des Messwerts.
+    """
     def __init__(self, wert, einheit, obis):
         self.wert = wert
         self.einheit = einheit
         self.obis = obis
         
 class Zaehler:
+    """
+    Klasse für Zähler.
+    :param vendor: Der Hersteller des Zählers.
+    :param sn: Die Seriennummer des Zählers.
+    :param leistung: Die Wirkleistung des Zählers.
+    :param bezug: Der Bezug des Zählers.
+    :param einspeisung: Die Einspeisung des Zählers.
+    """
     def __init__(self, vendor, sn, leistung, bezug, einspeisung):
         self.vendor = vendor
         self.sn = sn
@@ -137,6 +170,14 @@ class Zaehler:
         self.einspeisung = einspeisung
 
 class OBIS_Object:
+    """
+    Klasse für OBIS-Objekte.
+    :param code: Der OBIS-Code des Objekts.
+    :param start: Die Startposition des Objekts im SML-Telegramm.
+    :param factor: Der Skalenfaktor des Objekts.
+    :param einheit: Die Einheit des Objekts.
+    :param wert: Der Wert des Objekts.
+    """
     def __init__(self, code, start, factor, einheit, wert):
         self.code = code
         self.start = start
@@ -145,12 +186,25 @@ class OBIS_Object:
         self.wert = wert
 
 class OBIS_Unterobject:
+    """
+    Klasse für OBIS-Unterobjekte.
+    :param offset: Der Offset des Unterobjekts im SML-Telegramm.
+    :param laenge: Die Länge des Unterobjekts im SML-Telegramm.
+    """
     def __init__(self, offset, laenge):
         self.offset = offset
         self.laenge = laenge    
 
 # Funktion: Werte speichern
 def save_to_sqlite(seriennummer, hersteller, bezug_kwh, einspeisung_kwh, wirkleistung_watt):
+    """
+    Speichert die Messwerte in der SQLite-Datenbank.
+    :param seriennummer: Die Seriennummer des Zählers.
+    :param hersteller: Der Hersteller des Zählers.
+    :param bezug_kwh: Der Bezug in kWh.
+    :param einspeisung_kwh: Die Einspeisung in kWh.
+    :param wirkleistung_watt: Die Wirkleistung in Watt.
+    """
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
 
@@ -201,7 +255,7 @@ def decode_manufacturer(hex_string):
 def parse_device_id(hex_string):
     """
     Extrahiert die Gerätekennung aus einem vollständigen Hex-String.
-    Erwartet mindestens 10 Bytes nach dem TL-Feld (z. B. '0b0a01454d4xxxxx'). 
+    Erwartet mindestens 10 Bytes nach dem TL-Feld (z.B. '0b0a01454d4xxxxx'). 
     Ignoriert das TL-Feld und gibt den Hersteller und die Seriennummer zurück.
     Beispiel: 'EMH-0000xxxxxxx'
     :param hex_string: Der vollständige Hex-String.
