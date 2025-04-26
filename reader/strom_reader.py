@@ -230,7 +230,6 @@ def save_to_sqlite(seriennummer, hersteller, bezug_kwh, einspeisung_kwh, wirklei
     conn.close()
     logging.debug("💾 Messwerte in SQLite gespeichert: %s", (seriennummer, bezug_kwh, einspeisung_kwh, wirkleistung_watt))
 
-
 def decode_manufacturer(hex_string):
     """
     Wandelt einen Hex-String wie '04454D48' in einen lesbaren Hersteller-Code (z. B. 'EMH') um.
@@ -711,4 +710,4 @@ while True:
         else:
             buffer = b""
 
-        logging.debug("🔄 Buffer zurückgesetzt")       
+        logging.debug("🔄 Buffer zurückgesetzt")
