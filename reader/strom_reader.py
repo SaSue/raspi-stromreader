@@ -608,13 +608,13 @@ while True:
 
             # Wirkleistung suchen und skalieren
             wirk.wert = skalieren(
-                int(
+                int.from_bytes(
                     wert_suchen(
                         sml_data,
                         tech_konfiguration.leistung.start,
                         tech_konfiguration.leistung.wert.offset,
                         tech_konfiguration.leistung.wert.laenge
-                    ).hex(),16), 
+                    ), byteorder="big", signed=True), 
                 int.from_bytes(
                     wert_suchen(
                         sml_data,
