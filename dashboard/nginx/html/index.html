@@ -410,26 +410,39 @@
         window.gaugeChart.destroy();
       }
 
-      // falls kein Wert vorhanden ist, setze ihn auf 5000
-      maxWertHeute = maxWertHeute || 5000;
-      
-      // Neues Gauge-Diagramm erstellen
+      // Standardwert, falls kein Maximalwert vorhanden ist
+      maxWertHeute = Math.abs(maxWertHeute) || 5000;
+
+      // Wertebereich von -max bis +max
+      const min = -maxWertHeute;
+      const max = maxWertHeute;
+      // Wert auf Bereich begrenzen
+      wert = Math.max(min, Math.min(max, wert));
+
+      // Für das Gauge: Anteil negativ, Anteil positiv, Anteil Rest
+      let anteilNegativ = 0, anteilPositiv = 0;
+      if (wert < 0) {
+        anteilNegativ = Math.abs(wert);
+      } else {
+        anteilPositiv = wert;
+      }
+
       window.gaugeChart = new Chart(ctx, {
         type: "doughnut",
         data: {
-          labels: ["Verbrauch", "Rest"],
+          labels: ["Einspeisung", "Verbrauch", "Rest"],
           datasets: [{
-            data: [wert, maxWertHeute - wert], // Wert und Restkapazität
-            backgroundColor: ["#fffb00", "#444"], // Farben für Verbrauch und Rest
+            data: [anteilNegativ, anteilPositiv, maxWertHeute - Math.abs(wert)],
+            backgroundColor: ["#00e676", "#fffb00", "#444"], // Grün für negativ, Gelb für positiv, Grau für Rest
             borderWidth: 0
           }]
         },
         options: {
-          cutout: "80%", // Innerer Kreis
-          rotation: -90, // Startwinkel
-          circumference: 180, // Halbkreis
+          cutout: "80%",
+          rotation: -90,
+          circumference: 180,
           plugins: {
-            legend: { display: false } // Keine Legende anzeigen
+            legend: { display: false }
           }
         }
       });
