@@ -297,6 +297,8 @@ def wert_suchen(sml_telegram,idx_position,idx_offset,idx_len):
     :param idx_len: Länge des Wertes.
     :return: Der gefundene Wert (Bytes).
     """
+    logging.debug("Suchen nach Wert: Startposition %d, Offset %d, Länge %d", idx_position, idx_offset, idx_len)
+    logging.debug(sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len])
     return sml_telegram[idx_position + idx_offset:idx_position + idx_offset + idx_len]
 
 def skalieren(wert, skala):
