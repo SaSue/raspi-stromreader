@@ -312,6 +312,7 @@ def skalieren(wert, skala):
     :param skala: Der Skalenfaktor (int).
     :return: Der skalierte Wert (float).
     """
+    logging.debug("Skalieren: Wert %s, Skala %d", wert, skala)
     if skala == 0:
         return wert
     else:
