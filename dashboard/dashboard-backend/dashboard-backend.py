@@ -34,6 +34,7 @@ def get_dashboard_data():
     cursor = conn.cursor()
 
     try:
+        
         # Momentanverbrauch
         logger.debug("🔍 Abfrage: Momentanverbrauch")
         leistung_row = cursor.execute("""
@@ -122,14 +123,15 @@ def get_dashboard_data():
                 MIN(wirkleistung_watt) as min_watt,
                 AVG(wirkleistung_watt) as avg_watt
             FROM messwerte
-            WHERE DATE(timestamp) = DATE('now')
-        """).fetchone()
+            WHERE timestamp >= ? AND timestamp < ?
+        """,(start,end)).fetchone()
 
         max_heute = heute_stats["max_watt"] if heute_stats and heute_stats["max_watt"] is not None else 0
         min_heute = heute_stats["min_watt"] if heute_stats and heute_stats["min_watt"] is not None else 0
         avg_heute = round(heute_stats["avg_watt"], 2) if heute_stats and heute_stats["avg_watt"] is not None else 0
 
         # Max, Min und Durchschnitt für gestern
+        start, end = get_day_range(gestern)
         logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für gestern")
         gestern_stats = cursor.execute("""
             SELECT 
@@ -137,8 +139,8 @@ def get_dashboard_data():
                 MIN(wirkleistung_watt) as min_watt,
                 AVG(wirkleistung_watt) as avg_watt
             FROM messwerte
-            WHERE DATE(timestamp) = DATE('now', '-1 day')
-        """).fetchone()
+            WHERE timestamp >= ? AND timestamp < ?
+        """,(start,end)).fetchone()
 
         max_gestern = gestern_stats["max_watt"] if gestern_stats and gestern_stats["max_watt"] is not None else 0
         min_gestern = gestern_stats["min_watt"] if gestern_stats and gestern_stats["min_watt"] is not None else 0
@@ -178,13 +180,15 @@ def get_tagesverlauf():
     cursor = conn.cursor()
 
     try:
+        heute = date.today()
+        start, end = get_day_range(heute)
         # Tagesverlauf-Daten abrufen
         verlauf = cursor.execute("""
             SELECT timestamp, wirkleistung_watt 
             FROM messwerte 
-            WHERE DATE(timestamp) = DATE('now')
+            WHERE timestamp >= ? AND timestamp < ?
             ORDER BY timestamp ASC
-        """).fetchall()
+        """,(start,end)).fetchall()
 
         # Daten in ein JSON-kompatibles Format umwandeln
         verlauf_data = [{"timestamp": row["timestamp"], "leistung": row["wirkleistung_watt"]} for row in verlauf]
