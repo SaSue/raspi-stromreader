@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
-from datetime import datetime
+from datetime import datetime, date, timedelta
+
 import sqlite3
 import logging
 
@@ -13,6 +14,11 @@ logging.basicConfig(
     datefmt="%Y-%m-%d %H:%M:%S"
 )
 logger = logging.getLogger("dashboard-backend")
+
+def get_day_range(d: date):
+    start = datetime.combine(d, datetime.min.time())
+    end = start + timedelta(days=1)
+    return start.isoformat(sep=" "), end.isoformat(sep=" ")
 
 def get_db_connection():
     logger.debug("🔌 Verbindung zur SQLite-Datenbank herstellen...")
@@ -54,23 +60,27 @@ def get_dashboard_data():
             FROM messwerte
         """).fetchone()
         einspeisung = einspeisung_row["einspeisung"] if einspeisung_row and einspeisung_row["einspeisung"] is not None else 0
-
+        
+        heute = date.today()
+        start, end = get_day_range(heute)
         # Verbrauch heute
         logger.debug("🔍 Abfrage: Verbrauch heute")
         verbrauch_heute_row = cursor.execute("""
             SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
             FROM messwerte
-            WHERE DATE(timestamp) = DATE('now')
-        """).fetchone()
+            WHERE timestamp >= ? AND timestamp < ?
+        """, (start, end)).fetchone()
         verbrauch_heute = verbrauch_heute_row["verbrauch"] if verbrauch_heute_row and verbrauch_heute_row["verbrauch"] is not None else 0
 
+        gestern = date.today() -1
+        start, end = get_day_range(gestern)
         # Verbrauch gestern
         logger.debug("🔍 Abfrage: Verbrauch gestern")
         verbrauch_gestern_row = cursor.execute("""
             SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
             FROM messwerte
-            WHERE DATE(timestamp) = DATE('now', '-1 day')
-        """).fetchone()
+            WHERE timestamp >= ? AND timestamp < ?
+        """, (start,end)).fetchone()
         verbrauch_gestern = verbrauch_gestern_row["verbrauch"] if verbrauch_gestern_row and verbrauch_gestern_row["verbrauch"] is not None else 0
 
         # Tendenz berechnen
@@ -105,6 +115,7 @@ def get_dashboard_data():
         
         
         # Max, Min und Durchschnitt für heute
+        start, end = get_day_range(heute)
         logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
         heute_stats = cursor.execute("""
             SELECT 
