@@ -33,145 +33,145 @@ def get_dashboard_data():
     conn = get_db_connection()
     cursor = conn.cursor()
 
-#    try:
+    try:
         
-    # Momentanverbrauch
-    logger.debug("🔍 Abfrage: Momentanverbrauch")
-    leistung_row = cursor.execute("""
-        SELECT wirkleistung_watt, timestamp
-        FROM messwerte
-        ORDER BY timestamp DESC
-        LIMIT 1
-    """).fetchone()
-    leistung = leistung_row["wirkleistung_watt"] if leistung_row else 0
-    letzter_timestamp = leistung_row["timestamp"] if leistung_row else None
+        # Momentanverbrauch
+        logger.debug("🔍 Abfrage: Momentanverbrauch")
+        leistung_row = cursor.execute("""
+            SELECT wirkleistung_watt, timestamp
+            FROM messwerte
+            ORDER BY timestamp DESC
+            LIMIT 1
+        """).fetchone()
+        leistung = leistung_row["wirkleistung_watt"] if leistung_row else 0
+        letzter_timestamp = leistung_row["timestamp"] if leistung_row else None
 
-    # Bezug gesamt
-    logger.debug("🔍 Abfrage: Bezug gesamt")
-    bezug_row = cursor.execute("""
-        SELECT MAX(bezug_kwh) as bezug
-        FROM messwerte
-    """).fetchone()
-    bezug = bezug_row["bezug"] if bezug_row and bezug_row["bezug"] is not None else 0
+        # Bezug gesamt
+        logger.debug("🔍 Abfrage: Bezug gesamt")
+        bezug_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) as bezug
+            FROM messwerte
+        """).fetchone()
+        bezug = bezug_row["bezug"] if bezug_row and bezug_row["bezug"] is not None else 0
 
-    # Einspeisung gesamt
-    logger.debug("🔍 Abfrage: Einspeisung gesamt")
-    einspeisung_row = cursor.execute("""
-        SELECT MAX(einspeisung_kwh) as einspeisung
-        FROM messwerte
-    """).fetchone()
-    einspeisung = einspeisung_row["einspeisung"] if einspeisung_row and einspeisung_row["einspeisung"] is not None else 0
-    
-    heute = date.today()
-    start, end = get_day_range(heute)
-    # Verbrauch heute
-    logger.debug("🔍 Abfrage: Verbrauch heute")
-    verbrauch_heute_row = cursor.execute("""
-        SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
-        FROM messwerte
-        WHERE timestamp >= ? AND timestamp < ?
-    """, (start, end)).fetchone()
-    verbrauch_heute = verbrauch_heute_row["verbrauch"] if verbrauch_heute_row and verbrauch_heute_row["verbrauch"] is not None else 0
+        # Einspeisung gesamt
+        logger.debug("🔍 Abfrage: Einspeisung gesamt")
+        einspeisung_row = cursor.execute("""
+            SELECT MAX(einspeisung_kwh) as einspeisung
+            FROM messwerte
+        """).fetchone()
+        einspeisung = einspeisung_row["einspeisung"] if einspeisung_row and einspeisung_row["einspeisung"] is not None else 0
+        
+        heute = date.today()
+        start, end = get_day_range(heute)
+        # Verbrauch heute
+        logger.debug("🔍 Abfrage: Verbrauch heute")
+        verbrauch_heute_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            WHERE timestamp >= ? AND timestamp < ?
+        """, (start, end)).fetchone()
+        verbrauch_heute = verbrauch_heute_row["verbrauch"] if verbrauch_heute_row and verbrauch_heute_row["verbrauch"] is not None else 0
 
-    gestern = date.today() -1
-    start, end = get_day_range(gestern)
-    # Verbrauch gestern
-    logger.debug("🔍 Abfrage: Verbrauch gestern")
-    verbrauch_gestern_row = cursor.execute("""
-        SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
-        FROM messwerte
-        WHERE timestamp >= ? AND timestamp < ?
-    """, (start,end)).fetchone()
-    verbrauch_gestern = verbrauch_gestern_row["verbrauch"] if verbrauch_gestern_row and verbrauch_gestern_row["verbrauch"] is not None else 0
+        gestern = date.today() - timedelta(days=1)
+        start, end = get_day_range(gestern)
+        # Verbrauch gestern
+        logger.debug("🔍 Abfrage: Verbrauch gestern")
+        verbrauch_gestern_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            FROM messwerte
+            WHERE timestamp >= ? AND timestamp < ?
+        """, (start,end)).fetchone()
+        verbrauch_gestern = verbrauch_gestern_row["verbrauch"] if verbrauch_gestern_row and verbrauch_gestern_row["verbrauch"] is not None else 0
 
-    # Tendenz berechnen
-    logger.debug("🔍 Abfrage: Tendenz")
-    
-    # Aktuelle Zeit
-    jetzt = datetime.now()  
-    aktuelle_stunde = jetzt.hour
-    aktuelle_minute = jetzt.minute
+        # Tendenz berechnen
+        logger.debug("🔍 Abfrage: Tendenz")
+        
+        # Aktuelle Zeit
+        jetzt = datetime.now()  
+        aktuelle_stunde = jetzt.hour
+        aktuelle_minute = jetzt.minute
 
-    # Prozentualer Anteil des Tages
-    anteil_tag = (aktuelle_stunde * 60 + aktuelle_minute) / (24 * 60) * 100
-    logger.debug("🔍 Abfrage: Prozentualer Anteil des Tages: %.2f%%", anteil_tag)
+        # Prozentualer Anteil des Tages
+        anteil_tag = (aktuelle_stunde * 60 + aktuelle_minute) / (24 * 60) * 100
+        logger.debug("🔍 Abfrage: Prozentualer Anteil des Tages: %.2f%%", anteil_tag)
 
-    # Berechnung der Tendenz
-    verbrauch_gestern_anteil = verbrauch_gestern * (anteil_tag / 100)
+        # Berechnung der Tendenz
+        verbrauch_gestern_anteil = verbrauch_gestern * (anteil_tag / 100)
 
-    if abs(verbrauch_heute - verbrauch_gestern_anteil) <= verbrauch_gestern_anteil * 0.01:
-        tendenz = "gleich"
-    elif verbrauch_heute > verbrauch_gestern_anteil * 1.01 and verbrauch_heute <= verbrauch_gestern_anteil * 1.10:
-        tendenz = "mehr"
-    elif verbrauch_heute > verbrauch_gestern_anteil * 1.10:
-        tendenz = "viel mehr"
-    elif verbrauch_heute < verbrauch_gestern_anteil * 0.99 and verbrauch_heute >= verbrauch_gestern_anteil * 0.90:
-        tendenz = "weniger"
-    elif verbrauch_heute < verbrauch_gestern_anteil * 0.90:
-        tendenz = "viel weniger"
-    else:
-        tendenz = "unbekannt"  # Fallback für unerwartete Fälle
+        if abs(verbrauch_heute - verbrauch_gestern_anteil) <= verbrauch_gestern_anteil * 0.01:
+            tendenz = "gleich"
+        elif verbrauch_heute > verbrauch_gestern_anteil * 1.01 and verbrauch_heute <= verbrauch_gestern_anteil * 1.10:
+            tendenz = "mehr"
+        elif verbrauch_heute > verbrauch_gestern_anteil * 1.10:
+            tendenz = "viel mehr"
+        elif verbrauch_heute < verbrauch_gestern_anteil * 0.99 and verbrauch_heute >= verbrauch_gestern_anteil * 0.90:
+            tendenz = "weniger"
+        elif verbrauch_heute < verbrauch_gestern_anteil * 0.90:
+            tendenz = "viel weniger"
+        else:
+            tendenz = "unbekannt"  # Fallback für unerwartete Fälle
 
-    logger.debug("🔍 Tendenz: %s", tendenz)
-    
-    # Max, Min und Durchschnitt für heute
-    start, end = get_day_range(heute)
-    logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
-    heute_stats = cursor.execute("""
-        SELECT 
-            MAX(wirkleistung_watt) as max_watt,
-            MIN(wirkleistung_watt) as min_watt,
-            AVG(wirkleistung_watt) as avg_watt
-        FROM messwerte
-        WHERE timestamp >= ? AND timestamp < ?
-    """,(start,end)).fetchone()
+        logger.debug("🔍 Tendenz: %s", tendenz)
+        
+        # Max, Min und Durchschnitt für heute
+        start, end = get_day_range(heute)
+        logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
+        heute_stats = cursor.execute("""
+            SELECT 
+                MAX(wirkleistung_watt) as max_watt,
+                MIN(wirkleistung_watt) as min_watt,
+                AVG(wirkleistung_watt) as avg_watt
+            FROM messwerte
+            WHERE timestamp >= ? AND timestamp < ?
+        """,(start,end)).fetchone()
 
-    max_heute = heute_stats["max_watt"] if heute_stats and heute_stats["max_watt"] is not None else 0
-    min_heute = heute_stats["min_watt"] if heute_stats and heute_stats["min_watt"] is not None else 0
-    avg_heute = round(heute_stats["avg_watt"], 2) if heute_stats and heute_stats["avg_watt"] is not None else 0
+        max_heute = heute_stats["max_watt"] if heute_stats and heute_stats["max_watt"] is not None else 0
+        min_heute = heute_stats["min_watt"] if heute_stats and heute_stats["min_watt"] is not None else 0
+        avg_heute = round(heute_stats["avg_watt"], 2) if heute_stats and heute_stats["avg_watt"] is not None else 0
 
-    # Max, Min und Durchschnitt für gestern
-    start, end = get_day_range(gestern)
-    logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für gestern")
-    gestern_stats = cursor.execute("""
-        SELECT 
-            MAX(wirkleistung_watt) as max_watt,
-            MIN(wirkleistung_watt) as min_watt,
-            AVG(wirkleistung_watt) as avg_watt
-        FROM messwerte
-        WHERE timestamp >= ? AND timestamp < ?
-    """,(start,end)).fetchone()
+        # Max, Min und Durchschnitt für gestern
+        start, end = get_day_range(gestern)
+        logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für gestern")
+        gestern_stats = cursor.execute("""
+            SELECT 
+                MAX(wirkleistung_watt) as max_watt,
+                MIN(wirkleistung_watt) as min_watt,
+                AVG(wirkleistung_watt) as avg_watt
+            FROM messwerte
+            WHERE timestamp >= ? AND timestamp < ?
+        """,(start,end)).fetchone()
 
-    max_gestern = gestern_stats["max_watt"] if gestern_stats and gestern_stats["max_watt"] is not None else 0
-    min_gestern = gestern_stats["min_watt"] if gestern_stats and gestern_stats["min_watt"] is not None else 0
-    avg_gestern = round(gestern_stats["avg_watt"], 2) if gestern_stats and gestern_stats["avg_watt"] is not None else 0
+        max_gestern = gestern_stats["max_watt"] if gestern_stats and gestern_stats["max_watt"] is not None else 0
+        min_gestern = gestern_stats["min_watt"] if gestern_stats and gestern_stats["min_watt"] is not None else 0
+        avg_gestern = round(gestern_stats["avg_watt"], 2) if gestern_stats and gestern_stats["avg_watt"] is not None else 0
 
-    # Daten als JSON zurückgeben
-    response = {
-        "leistung": leistung,
-        "timestamp": letzter_timestamp,
-        "bezug": bezug,
-        "einspeisung": einspeisung,
-        "verbrauchHeute": verbrauch_heute,
-        "tendenz" : tendenz,
-        "verbrauchGestern": verbrauch_gestern,
-        "maxHeute": max_heute,
-        "minHeute": min_heute,
-        "avgHeute": avg_heute,
-        "maxGestern": max_gestern,
-        "minGestern": min_gestern,
-        "avgGestern": avg_gestern
-    }
-    logger.debug("📤 API-Antwort: %s", response)
-    return jsonify(response)
+        # Daten als JSON zurückgeben
+        response = {
+            "leistung": leistung,
+            "timestamp": letzter_timestamp,
+            "bezug": bezug,
+            "einspeisung": einspeisung,
+            "verbrauchHeute": verbrauch_heute,
+            "tendenz" : tendenz,
+            "verbrauchGestern": verbrauch_gestern,
+            "maxHeute": max_heute,
+            "minHeute": min_heute,
+            "avgHeute": avg_heute,
+            "maxGestern": max_gestern,
+            "minGestern": min_gestern,
+            "avgGestern": avg_gestern
+        }
+        logger.debug("📤 API-Antwort: %s", response)
+        return jsonify(response)
 
-   # except Exception as e:
-    #    logger.error("❌ Fehler bei der Verarbeitung der Abfragen: %s", str(e))
-    #    return jsonify({"error": "Fehler beim Abrufen der Daten"}), 500
+    except Exception as e:
+        logger.error("❌ Fehler bei der Verarbeitung der Abfragen: %s", str(e))
+        return jsonify({"error": "Fehler beim Abrufen der Daten"}), 500
 
-    # finally:
-      #   conn.close()
-        #logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
+    finally:
+        conn.close()
+        logger.debug("🔒 Verbindung zur SQLite-Datenbank geschlossen.")
 
 @app.route('/api/tagesverlauf', methods=['GET'])
 def get_tagesverlauf():
