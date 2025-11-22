@@ -113,7 +113,6 @@ def get_dashboard_data():
 
         logger.debug("🔍 Tendenz: %s", tendenz)
         
-        
         # Max, Min und Durchschnitt für heute
         start, end = get_day_range(heute)
         logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
