@@ -1,7 +1,7 @@
 services:
 
   strom-dashboard-backend:
-    image: ./dashboard-backend
+    image: ghcr.io/sasue/raspi-stromreader/dashboard-backend:latest
     container_name: strom-dashboard-backend
     volumes:
       - /var/www/html/strom.sqlite:/app/data/strom.sqlite
@@ -9,7 +9,7 @@ services:
       - proxy-net
 
   strom-reader:
-    build: .
+    image: ghcr.io/sasue/raspi-stromreader/reader:latest
     container_name: strom-reader
     devices:
       - "/dev/ttyUSB0:/dev/ttyUSB0" # Hier den Port des Readers anpassen, nur den am hostsystem 
