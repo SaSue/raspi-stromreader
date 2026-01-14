@@ -53,6 +53,10 @@ jobs:
         id: meta
         run: |
           echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+      - name: Normalize repository name
+        id: repo
+        run: |
+          echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_OUTPUT
 
       - name: Build and push (${{ matrix.name }}) (arm64)
         uses: docker/build-push-action@v6
@@ -62,7 +66,7 @@ jobs:
           push: true
           platforms: linux/arm64
           tags: |
-            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image_suffix }}:${{ steps.meta.outputs.tag }}
-            ${{ env.REGISTRY }}/${{ github.repository }}/${{ matrix.image_suffix }}:latest
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.repo }}/${{ matrix.image_suffix }}:${{ steps.meta.outputs.tag }}
+            ${{ env.REGISTRY }}/${{ steps.repo.outputs.repo }}/${{ matrix.image_suffix }}:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
