@@ -77,6 +77,10 @@ class SQLiteStoreTest(unittest.TestCase):
         store = SQLiteStore(self.db_path)
 
         self.assertEqual(
+            store.connection.execute("PRAGMA user_version").fetchone()[0],
+            SQLiteStore.SCHEMA_VERSION,
+        )
+        self.assertEqual(
             store.connection.execute("SELECT COUNT(*) FROM messwerte").fetchone()[0], 1
         )
         self.assertIsNotNone(
@@ -84,7 +88,53 @@ class SQLiteStoreTest(unittest.TestCase):
                 "SELECT name FROM sqlite_master WHERE name = 'idx_timestamp'"
             ).fetchone()
         )
+        self.assertTrue(store.backup_path.exists())
+        backup = sqlite3.connect(store.backup_path)
+        self.assertEqual(backup.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+        self.assertEqual(backup.execute("SELECT COUNT(*) FROM messwerte").fetchone()[0], 1)
+        backup.close()
         store.close()
+
+    def test_migration_is_idempotent_and_does_not_replace_backup(self):
+        store = SQLiteStore(self.db_path)
+        store.save("meter-1", "EMH", 1.0, 0.0, 10)
+        store.close()
+
+        # Simulate a pre-1.1.3 database once so that a rollback backup is created.
+        connection = sqlite3.connect(self.db_path)
+        connection.execute("PRAGMA user_version = 0")
+        connection.commit()
+        connection.close()
+        migrated = SQLiteStore(self.db_path)
+        backup_mtime = migrated.backup_path.stat().st_mtime_ns
+        migrated.close()
+
+        reopened = SQLiteStore(self.db_path)
+        self.assertEqual(reopened.backup_path.stat().st_mtime_ns, backup_mtime)
+        self.assertEqual(
+            reopened.connection.execute("SELECT COUNT(*) FROM messwerte").fetchone()[0], 1
+        )
+        reopened.close()
+
+    def test_migration_stops_when_existing_backup_is_invalid(self):
+        connection = sqlite3.connect(self.db_path)
+        connection.execute("CREATE TABLE existing_data (value TEXT)")
+        connection.commit()
+        connection.close()
+        backup_path = Path(f"{self.db_path}.backup-v1.1.3")
+        backup_path.write_bytes(b"not a sqlite database")
+
+        with self.assertRaises(sqlite3.DatabaseError):
+            SQLiteStore(self.db_path)
+
+        connection = sqlite3.connect(self.db_path)
+        self.assertEqual(connection.execute("PRAGMA user_version").fetchone()[0], 0)
+        self.assertIsNotNone(
+            connection.execute(
+                "SELECT name FROM sqlite_master WHERE name = 'existing_data'"
+            ).fetchone()
+        )
+        connection.close()
 
 
 if __name__ == "__main__":
