@@ -4,7 +4,7 @@ services:
     image: ghcr.io/sasue/raspi-stromreader/dashboard-backend:latest
     container_name: strom-dashboard-backend
     volumes:
-      - /var/www/html/strom.sqlite:/app/data/strom.sqlite
+      - /var/www/html:/app/data:ro
     networks:
       - proxy-net
 
@@ -31,4 +31,3 @@ services:
 networks:
   proxy-net:
     external: true
-
