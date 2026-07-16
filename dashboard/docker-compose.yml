@@ -14,7 +14,7 @@ services:
     ports:
       - "5000"
     volumes:
-      - /var/www/html/strom.sqlite:/app/data/strom.sqlite
+      - /var/www/html:/app/data:ro
     networks:
       - strom-network
 
