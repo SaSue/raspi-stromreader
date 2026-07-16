@@ -3,10 +3,14 @@ import argparse
 import sqlite3
 import sys
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
-def parse_timestamp(value):
-    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+def parse_timestamp(value, local_timezone):
+    timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if timestamp.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=local_timezone)
+    return timestamp
 
 
 def main():
@@ -14,6 +18,7 @@ def main():
     parser.add_argument("-d", "--database", default="/var/www/html/strom.sqlite")
     parser.add_argument("-w", "--warning", type=int, default=180)
     parser.add_argument("-c", "--critical", type=int, default=600)
+    parser.add_argument("--timezone", default="Europe/Berlin")
     args = parser.parse_args()
 
     if args.warning <= 0 or args.critical <= args.warning:
@@ -32,10 +37,15 @@ def main():
             print("CRITICAL - no meter readings found")
             return 2
 
-        last_reading = parse_timestamp(row[0])
-        now = datetime.now(last_reading.tzinfo) if last_reading.tzinfo else datetime.now()
-        age = max(0, int((now - last_reading).total_seconds()))
-    except (OSError, sqlite3.Error, TypeError, ValueError) as error:
+        local_timezone = ZoneInfo(args.timezone)
+        last_reading = parse_timestamp(row[0], local_timezone)
+        now = datetime.now(local_timezone)
+        age = int((now - last_reading).total_seconds())
+        if age < -300:
+            print(f"UNKNOWN - last meter reading is {-age}s in the future")
+            return 3
+        age = max(0, age)
+    except (OSError, sqlite3.Error, TypeError, ValueError, KeyError) as error:
         print(f"UNKNOWN - cannot read meter database: {error}")
         return 3
 
