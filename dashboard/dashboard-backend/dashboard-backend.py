@@ -3,9 +3,11 @@ from datetime import datetime, date, timedelta
 
 import sqlite3
 import logging
+import os
 
 app = Flask(__name__)
-DB_PATH = "/app/data/strom.sqlite"
+DB_PATH = os.getenv("DB_PATH", "/app/data/strom.sqlite")
+SQLITE_TIMEOUT_SECONDS = float(os.getenv("SQLITE_TIMEOUT_SECONDS", "10"))
 
 # === Logging einrichten ===
 logging.basicConfig(
@@ -16,14 +18,23 @@ logging.basicConfig(
 logger = logging.getLogger("dashboard-backend")
 
 def get_day_range(d: date):
-    start = datetime.combine(d, datetime.min.time())
-    end = start + timedelta(days=1)
-    return start.isoformat(sep=" "), end.isoformat(sep=" ")
+    """Return index-friendly ISO date bounds for one local calendar day."""
+    return d.isoformat(), (d + timedelta(days=1)).isoformat()
+
+
+def parse_date(value: str):
+    try:
+        return date.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
 
 def get_db_connection():
     logger.debug("🔌 Verbindung zur SQLite-Datenbank herstellen...")
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT_SECONDS)
     conn.row_factory = sqlite3.Row  # Damit die Ergebnisse als Dictionary zurückgegeben werden
+    conn.execute("PRAGMA busy_timeout = 10000")
+    conn.execute("PRAGMA foreign_keys = ON")
+    conn.execute("PRAGMA query_only = ON")
     logger.debug("✅ Verbindung erfolgreich hergestellt.")
     return conn
 
@@ -46,43 +57,43 @@ def get_dashboard_data():
         leistung = leistung_row["wirkleistung_watt"] if leistung_row else 0
         letzter_timestamp = leistung_row["timestamp"] if leistung_row else None
 
-        # Bezug gesamt
-        logger.debug("🔍 Abfrage: Bezug gesamt")
-        bezug_row = cursor.execute("""
-            SELECT MAX(bezug_kwh) as bezug
+        # Gesamtzaehlerstaende in einem Tabellendurchlauf bestimmen
+        logger.debug("🔍 Abfrage: Bezug und Einspeisung gesamt")
+        gesamt_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) AS bezug,
+                   MAX(einspeisung_kwh) AS einspeisung
             FROM messwerte
         """).fetchone()
-        bezug = bezug_row["bezug"] if bezug_row and bezug_row["bezug"] is not None else 0
-
-        # Einspeisung gesamt
-        logger.debug("🔍 Abfrage: Einspeisung gesamt")
-        einspeisung_row = cursor.execute("""
-            SELECT MAX(einspeisung_kwh) as einspeisung
-            FROM messwerte
-        """).fetchone()
-        einspeisung = einspeisung_row["einspeisung"] if einspeisung_row and einspeisung_row["einspeisung"] is not None else 0
+        bezug = gesamt_row["bezug"] if gesamt_row and gesamt_row["bezug"] is not None else 0
+        einspeisung = gesamt_row["einspeisung"] if gesamt_row and gesamt_row["einspeisung"] is not None else 0
         
         heute = date.today()
         start, end = get_day_range(heute)
-        # Verbrauch heute
-        logger.debug("🔍 Abfrage: Verbrauch heute")
-        verbrauch_heute_row = cursor.execute("""
-            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+        # Verbrauch und Leistungsstatistik heute gemeinsam berechnen
+        logger.debug("🔍 Abfrage: Tagesstatistik heute")
+        heute_stats = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch,
+                   MAX(wirkleistung_watt) AS max_watt,
+                   MIN(wirkleistung_watt) AS min_watt,
+                   AVG(wirkleistung_watt) AS avg_watt
             FROM messwerte
             WHERE timestamp >= ? AND timestamp < ?
         """, (start, end)).fetchone()
-        verbrauch_heute = verbrauch_heute_row["verbrauch"] if verbrauch_heute_row and verbrauch_heute_row["verbrauch"] is not None else 0
+        verbrauch_heute = heute_stats["verbrauch"] if heute_stats and heute_stats["verbrauch"] is not None else 0
 
         gestern = date.today() - timedelta(days=1)
         start, end = get_day_range(gestern)
-        # Verbrauch gestern
-        logger.debug("🔍 Abfrage: Verbrauch gestern")
-        verbrauch_gestern_row = cursor.execute("""
-            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+        # Verbrauch und Leistungsstatistik gestern gemeinsam berechnen
+        logger.debug("🔍 Abfrage: Tagesstatistik gestern")
+        gestern_stats = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch,
+                   MAX(wirkleistung_watt) AS max_watt,
+                   MIN(wirkleistung_watt) AS min_watt,
+                   AVG(wirkleistung_watt) AS avg_watt
             FROM messwerte
             WHERE timestamp >= ? AND timestamp < ?
         """, (start,end)).fetchone()
-        verbrauch_gestern = verbrauch_gestern_row["verbrauch"] if verbrauch_gestern_row and verbrauch_gestern_row["verbrauch"] is not None else 0
+        verbrauch_gestern = gestern_stats["verbrauch"] if gestern_stats and gestern_stats["verbrauch"] is not None else 0
 
         # Tendenz berechnen
         logger.debug("🔍 Abfrage: Tendenz")
@@ -114,33 +125,9 @@ def get_dashboard_data():
 
         logger.debug("🔍 Tendenz: %s", tendenz)
         
-        # Max, Min und Durchschnitt für heute
-        start, end = get_day_range(heute)
-        logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für heute")
-        heute_stats = cursor.execute("""
-            SELECT 
-                MAX(wirkleistung_watt) as max_watt,
-                MIN(wirkleistung_watt) as min_watt,
-                AVG(wirkleistung_watt) as avg_watt
-            FROM messwerte
-            WHERE timestamp >= ? AND timestamp < ?
-        """,(start,end)).fetchone()
-
         max_heute = heute_stats["max_watt"] if heute_stats and heute_stats["max_watt"] is not None else 0
         min_heute = heute_stats["min_watt"] if heute_stats and heute_stats["min_watt"] is not None else 0
         avg_heute = round(heute_stats["avg_watt"], 2) if heute_stats and heute_stats["avg_watt"] is not None else 0
-
-        # Max, Min und Durchschnitt für gestern
-        start, end = get_day_range(gestern)
-        logger.debug("🔍 Abfrage: Max, Min und Durchschnitt für gestern")
-        gestern_stats = cursor.execute("""
-            SELECT 
-                MAX(wirkleistung_watt) as max_watt,
-                MIN(wirkleistung_watt) as min_watt,
-                AVG(wirkleistung_watt) as avg_watt
-            FROM messwerte
-            WHERE timestamp >= ? AND timestamp < ?
-        """,(start,end)).fetchone()
 
         max_gestern = gestern_stats["max_watt"] if gestern_stats and gestern_stats["max_watt"] is not None else 0
         min_gestern = gestern_stats["min_watt"] if gestern_stats and gestern_stats["min_watt"] is not None else 0
@@ -207,7 +194,8 @@ def get_tagesverlauf():
 def get_wochenstatistik():
     logger.debug("📊 API-Aufruf: /api/wochenstatistik")
     datum = request.args.get('datum')  # Startdatum aus den Query-Parametern abrufen
-    if not datum:
+    start_date = parse_date(datum)
+    if not start_date:
         logger.error("❌ Kein Datum angegeben.")
         return jsonify({"error": "Kein Datum angegeben"}), 400
 
@@ -217,14 +205,16 @@ def get_wochenstatistik():
     try:
         # Wochenstatistik-Daten abrufen (Startdatum + 6 Tage)
         logger.debug("🔍 Abfrage: Wochenstatistik ab %s", datum)
+        start = start_date.isoformat()
+        end = (start_date + timedelta(days=7)).isoformat()
         statistik = cursor.execute("""
-            SELECT DATE(timestamp) as datum, 
+            SELECT substr(timestamp, 1, 10) AS datum,
                    MAX(bezug_kwh) - MIN(bezug_kwh) as tagesverbrauch
             FROM messwerte
-            WHERE DATE(timestamp) BETWEEN DATE(?) AND DATE(?, '+6 days')
-            GROUP BY DATE(timestamp)
+            WHERE timestamp >= ? AND timestamp < ?
+            GROUP BY substr(timestamp, 1, 10)
             ORDER BY datum ASC
-        """, (datum, datum)).fetchall()
+        """, (start, end)).fetchall()
 
         # Daten in ein JSON-kompatibles Format umwandeln
         statistik_data = [{"datum": row["datum"], "verbrauch": row["tagesverbrauch"]} for row in statistik]
@@ -243,7 +233,8 @@ def get_wochenstatistik():
 def get_tagesdaten():
     logger.debug("📊 API-Aufruf: /api/tagesdaten")
     datum = request.args.get('datum')  # Datum aus den Query-Parametern abrufen
-    if not datum:
+    selected_date = parse_date(datum)
+    if not selected_date:
         logger.error("❌ Kein Datum angegeben.")
         return jsonify({"error": "Kein Datum angegeben"}), 400
 
@@ -251,32 +242,26 @@ def get_tagesdaten():
     cursor = conn.cursor()
 
     try:
-        # Tagesverbrauch berechnen (max - min Bezug)
-        logger.debug("🔍 Abfrage: Tagesverbrauch für %s", datum)
-        verbrauch_row = cursor.execute("""
-            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
+        start, end = get_day_range(selected_date)
+        # Tagesverbrauch und Endstand in einem Durchlauf berechnen
+        logger.debug("🔍 Abfrage: Tageswerte für %s", datum)
+        werte_row = cursor.execute("""
+            SELECT MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch,
+                   MAX(bezug_kwh) AS endstand
             FROM messwerte
-            WHERE DATE(timestamp) = ?
-        """, (datum,)).fetchone()
-        verbrauch = verbrauch_row["verbrauch"] if verbrauch_row and verbrauch_row["verbrauch"] is not None else 0
-
-        # Tagesendstand abrufen (max Bezug)
-        logger.debug("🔍 Abfrage: Tagesendstand für %s", datum)
-        endstand_row = cursor.execute("""
-            SELECT MAX(bezug_kwh) AS endstand
-            FROM messwerte
-            WHERE DATE(timestamp) = ?
-        """, (datum,)).fetchone()
-        endstand = endstand_row["endstand"] if endstand_row and endstand_row["endstand"] is not None else 0
+            WHERE timestamp >= ? AND timestamp < ?
+        """, (start, end)).fetchone()
+        verbrauch = werte_row["verbrauch"] if werte_row and werte_row["verbrauch"] is not None else 0
+        endstand = werte_row["endstand"] if werte_row and werte_row["endstand"] is not None else 0
 
         # Tagesverlauf abrufen (Leistung über den Tag)
         logger.debug("🔍 Abfrage: Tagesverlauf für %s", datum)
         verlauf = cursor.execute("""
             SELECT timestamp, wirkleistung_watt
             FROM messwerte
-            WHERE DATE(timestamp) = ?
+            WHERE timestamp >= ? AND timestamp < ?
             ORDER BY timestamp ASC
-        """, (datum,)).fetchall()
+        """, (start, end)).fetchall()
 
         verlauf_data = [{"timestamp": row["timestamp"], "leistung": row["wirkleistung_watt"]} for row in verlauf]
 
@@ -394,79 +379,38 @@ def get_statistik():
     cursor = conn.cursor()
 
     try:
-        # Tag mit höchstem Verbrauch
-        logger.debug("🔍 Abfrage: Tag mit höchstem Verbrauch")
-        max_tag_row = cursor.execute("""
-            SELECT DATE(timestamp) as datum, 
-                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+        # Jede Aggregationsebene nur einmal aus der Datenbank lesen.
+        today_start = date.today().isoformat()
+        logger.debug("🔍 Abfrage: Tages- und Monatsstatistik")
+        daily_rows = cursor.execute("""
+            SELECT substr(timestamp, 1, 10) AS periode,
+                   MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
             FROM messwerte
-            GROUP BY DATE(timestamp)
-            ORDER BY verbrauch DESC
-            LIMIT 1
-        """).fetchone()
-        max_tag = {"datum": max_tag_row["datum"], "verbrauch": max_tag_row["verbrauch"]} if max_tag_row else None
-
-        # Tag mit niedrigstem Verbrauch
-        logger.debug("🔍 Abfrage: Tag mit niedrigstem Verbrauch")
-        min_tag_row = cursor.execute("""
-            SELECT DATE(timestamp) as datum, 
-                MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
+            WHERE timestamp < ?
+            GROUP BY substr(timestamp, 1, 10)
+        """, (today_start,)).fetchall()
+        monthly_rows = cursor.execute("""
+            SELECT substr(timestamp, 1, 7) AS periode,
+                   MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
             FROM messwerte
-            WHERE DATE(timestamp) != DATE('now')  -- Aktuellen Tag ausschließen
-            GROUP BY DATE(timestamp)
-            ORDER BY verbrauch ASC
-            LIMIT 1
-        """).fetchone()
-        min_tag = {"datum": min_tag_row["datum"], "verbrauch": min_tag_row["verbrauch"]} if min_tag_row else None
+            GROUP BY substr(timestamp, 1, 7)
+        """).fetchall()
 
-        # Durchschnittlicher täglicher Verbrauch
-        logger.debug("🔍 Abfrage: Durchschnittlicher täglicher Verbrauch")
-        avg_tag_row = cursor.execute("""
-            SELECT AVG(tagesverbrauch) as avg_verbrauch
-            FROM (
-                SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as tagesverbrauch
-                FROM messwerte
-                WHERE DATE(timestamp) != DATE('now')  -- Aktuellen Tag ausschließen
-                GROUP BY DATE(timestamp)
+        def summarize(rows, key):
+            values = [row for row in rows if row["verbrauch"] is not None]
+            if not values:
+                return None, None, 0
+            highest = max(values, key=lambda row: row["verbrauch"])
+            lowest = min(values, key=lambda row: row["verbrauch"])
+            average = sum(row["verbrauch"] for row in values) / len(values)
+            return (
+                {key: highest["periode"], "verbrauch": highest["verbrauch"]},
+                {key: lowest["periode"], "verbrauch": lowest["verbrauch"]},
+                average,
             )
-        """).fetchone()
-        avg_tag = avg_tag_row["avg_verbrauch"] if avg_tag_row else 0
 
-        # Monat mit höchstem Verbrauch
-        logger.debug("🔍 Abfrage: Monat mit höchstem Verbrauch")
-        max_monat_row = cursor.execute("""
-            SELECT strftime('%Y-%m', timestamp) as monat, 
-                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
-            FROM messwerte
-            GROUP BY strftime('%Y-%m', timestamp)
-            ORDER BY verbrauch DESC
-            LIMIT 1
-        """).fetchone()
-        max_monat = {"monat": max_monat_row["monat"], "verbrauch": max_monat_row["verbrauch"]} if max_monat_row else None
-
-        # Monat mit niedrigstem Verbrauch
-        logger.debug("🔍 Abfrage: Monat mit niedrigstem Verbrauch")
-        min_monat_row = cursor.execute("""
-            SELECT strftime('%Y-%m', timestamp) as monat, 
-                   MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
-            FROM messwerte
-            GROUP BY strftime('%Y-%m', timestamp)
-            ORDER BY verbrauch ASC
-            LIMIT 1
-        """).fetchone()
-        min_monat = {"monat": min_monat_row["monat"], "verbrauch": min_monat_row["verbrauch"]} if min_monat_row else None
-
-        # Durchschnittlicher monatlicher Verbrauch
-        logger.debug("🔍 Abfrage: Durchschnittlicher monatlicher Verbrauch")
-        avg_monat_row = cursor.execute("""
-            SELECT AVG(monatsverbrauch) as avg_verbrauch
-            FROM (
-                SELECT MAX(bezug_kwh) - MIN(bezug_kwh) as monatsverbrauch
-                FROM messwerte
-                GROUP BY strftime('%Y-%m', timestamp)
-            )
-        """).fetchone()
-        avg_monat = avg_monat_row["avg_verbrauch"] if avg_monat_row else 0
+        max_tag, min_tag, avg_tag = summarize(daily_rows, "datum")
+        max_monat, min_monat, avg_monat = summarize(monthly_rows, "monat")
 
         # API-Antwort erstellen
         response = {
