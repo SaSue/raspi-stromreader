@@ -7,11 +7,11 @@ import crcmod
 import argparse
 import os
 import json
-import sqlite3
 import atexit
 from pathlib import Path
 from zoneinfo import ZoneInfo
 from datetime import datetime
+from sqlite_store import SQLiteStore
 
 # Logging konfigurieren
 parser = argparse.ArgumentParser()
@@ -74,75 +74,12 @@ logging.debug("📂 SQLite-Pfad: %s", DB_PATH
 DB_PATH.parent.mkdir(parents=True, exist_ok=True)
 logging.debug("📂 SQLite-Datenbankverzeichnis erstellt: %s", DB_PATH.parent)
 
-def open_db_connection():
-    connection = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT_SECONDS)
-    connection.execute("PRAGMA busy_timeout = 10000")
-    connection.execute("PRAGMA foreign_keys = ON")
-    return connection
-
-
-conn = open_db_connection()
-c = conn.cursor()
-
-if SQLITE_JOURNAL_MODE in {"DELETE", "TRUNCATE", "PERSIST", "MEMORY", "WAL", "OFF"}:
-    active_journal_mode = c.execute(
-        f"PRAGMA journal_mode = {SQLITE_JOURNAL_MODE}"
-    ).fetchone()[0]
-    logging.info("SQLite Journal-Modus: %s", active_journal_mode)
-else:
-    logging.warning("Ungültiger SQLITE_JOURNAL_MODE: %s", SQLITE_JOURNAL_MODE)
-
-# Tabellen erstellen, falls sie nicht existieren
-c.execute("""
-CREATE TABLE IF NOT EXISTS zaehler (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    seriennummer TEXT UNIQUE,
-    hersteller TEXT,
-    name TEXT
+sqlite_store = SQLiteStore(
+    DB_PATH,
+    timeout=SQLITE_TIMEOUT_SECONDS,
+    journal_mode=SQLITE_JOURNAL_MODE,
 )
-""")
-
-c.execute("""
-CREATE TABLE IF NOT EXISTS messwerte (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    zaehler_id INTEGER,
-    timestamp TEXT,
-    bezug_kwh REAL,
-    einspeisung_kwh REAL,
-    wirkleistung_watt REAL,
-    FOREIGN KEY (zaehler_id) REFERENCES zaehler(id)
-)
-""")
-
-# Prüfen, ob der Index existiert
-c.execute("""
-SELECT name 
-FROM sqlite_master 
-WHERE type='index' AND name='idx_timestamp';
-""")
-index_exists = c.fetchone()
-
-# Wenn nicht, erstelle ihn
-if not index_exists:
-    logging.debug("🔍 Index 'idx_timestamp' existiert nicht. Erstelle Index...")
-    c.execute("CREATE INDEX idx_timestamp ON messwerte(timestamp);")
-    logging.debug("✅ Index 'idx_timestamp' wurde erstellt.")
-else:
-    logging.debug("✅ Index 'idx_timestamp' existiert bereits.")
-
-conn.commit()
-
-_zaehler_ids = {}
-
-
-def close_db_connection():
-    try:
-        conn.close()
-    except sqlite3.Error:
-        logging.exception("SQLite-Verbindung konnte nicht geschlossen werden")
-
-
-atexit.register(close_db_connection)
+atexit.register(sqlite_store.close)
 
 # Klassen für Messwerte und Zähler
 class LeserKonfiguration:
@@ -234,28 +171,13 @@ def save_to_sqlite(seriennummer, hersteller, bezug_kwh, einspeisung_kwh, wirklei
     :param einspeisung_kwh: Die Einspeisung in kWh.
     :param wirkleistung_watt: Die Wirkleistung in Watt.
     """
-    with conn:
-        c = conn.cursor()
-
-        # Zähler-ID nur beim ersten Messwert einer Seriennummer nachschlagen.
-        zaehler_id = _zaehler_ids.get(seriennummer)
-        if zaehler_id is None:
-            c.execute("SELECT id FROM zaehler WHERE seriennummer = ?", (seriennummer,))
-            row = c.fetchone()
-            if row:
-                zaehler_id = row[0]
-                logging.debug("🔍 Zähler-ID gefunden: %s", zaehler_id)
-            else:
-                c.execute("INSERT INTO zaehler (seriennummer, hersteller) VALUES (?, ?)", (seriennummer, hersteller))
-                zaehler_id = c.lastrowid
-                logging.debug("💾 Neuer Zähler in SQLite gespeichert: %s", (seriennummer, hersteller))
-            _zaehler_ids[seriennummer] = zaehler_id
-
-        timestamp = datetime.now().isoformat()
-        c.execute("""
-            INSERT INTO messwerte (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt)
-            VALUES (?, ?, ?, ?, ?)
-        """, (zaehler_id, timestamp, bezug_kwh, einspeisung_kwh, wirkleistung_watt))
+    sqlite_store.save(
+        seriennummer,
+        hersteller,
+        bezug_kwh,
+        einspeisung_kwh,
+        wirkleistung_watt,
+    )
     logging.debug("💾 Messwerte in SQLite gespeichert: %s", (seriennummer, bezug_kwh, einspeisung_kwh, wirkleistung_watt))
 
 def decode_manufacturer(hex_string):
