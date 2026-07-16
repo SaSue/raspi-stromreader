@@ -3,6 +3,7 @@ import sqlite3
 import tempfile
 import unittest
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 from unittest.mock import patch
 
@@ -26,7 +27,9 @@ class StromreaderMonitoringTest(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def run_check(self, age):
-        timestamp = (datetime.now() - timedelta(seconds=age)).isoformat()
+        timestamp = (
+            datetime.now(ZoneInfo("Europe/Berlin")) - timedelta(seconds=age)
+        ).replace(tzinfo=None).isoformat()
         connection = sqlite3.connect(self.db_path)
         connection.execute("DELETE FROM messwerte")
         connection.execute("INSERT INTO messwerte VALUES (?)", (timestamp,))
