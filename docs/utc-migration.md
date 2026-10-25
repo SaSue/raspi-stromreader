@@ -12,8 +12,8 @@ Berliner Kalendergrenzen bleiben fachlich erhalten: Tagesdateinamen,
 Tages-/Wochen-/Monats-/Jahresstatistiken und Anzeige verwenden `Europe/Berlin`.
 Tagesabfragen wandeln beide lokalen Mitternachtsgrenzen nach UTC um und nutzen
 weiter den Timestamp-Index. Tage bei Zeitumstellung haben 23 bzw. 25 Stunden.
-Kalendergruppen werden explizit mit `zoneinfo` berechnet, unabhängig vom TZ des
-Containers. Die bestehende Verbrauchsdefinition MAX minus MIN bleibt erhalten.
+Kalendergruppen verwenden native SQLite-Zeitberechnung mit aus `zoneinfo`
+kompilierten Berliner Offsetintervallen, unabhängig vom TZ des Containers. Die bestehende Verbrauchsdefinition MAX minus MIN bleibt erhalten.
 
 OMD und Reader-Healthcheck nehmen den zuletzt eingefügten Datensatz (rowid),
 rechnen auf UTC und lehnen Zeitangaben ohne Offset ab. Die bisherigen
@@ -89,8 +89,8 @@ Archive nicht zusätzlich in eine bereits vollständig migrierte DB importieren.
 2. Probelauf auf konsistenter Kopie. Datensatzanzahl, IDs, Zählerstände und
    Fremdschlüssel mit Quelle vergleichen; UTC-Reihenfolge und Berliner Tages-,
    Monats- und Jahreswerte prüfen, besonders beide Herbststunden und Mitternacht.
-   Laufzeit, Plattenbedarf und API-Antwortzeiten auf dem Pi messen. Vollständige
-   Kalendergruppen nutzen Python-Zeitzonenfunktionen; deren Laufzeit prüfen.
+   Laufzeit, Plattenbedarf und API-Antwortzeiten auf dem Pi messen. Vollständige Kalendergruppen verwenden native SQLite-Ausdrücke; deren
+   Laufzeit prüfen.
 3. **Explizite Freigabe für das Wartungsfenster einholen.** Reader und Dashboard
    müssen für den finalen Austausch gestoppt werden. Geprüfte Images bereithalten,
    vorhandene Tags/Digests, Compose, Mounts, Limits und altes OMD-Plugin sichern.

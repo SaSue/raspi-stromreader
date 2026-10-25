@@ -21,11 +21,44 @@ logger = logging.getLogger("dashboard-backend")
 LOCAL_TIMEZONE = ZoneInfo("Europe/Berlin")
 
 
-def local_period(value, length):
-    moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
-    if moment.tzinfo is None:
-        raise ValueError("UTC migration required")
-    return moment.astimezone(LOCAL_TIMEZONE).isoformat()[:length]
+def calendar_expression(conn):
+    """Compile Berlin offset intervals into native SQLite date arithmetic.
+
+    ZoneInfo supplies historical/DST rules once per connection, rather than
+    invoking Python separately for every measurement in each aggregation.
+    """
+    first = conn.execute("SELECT timestamp FROM messwerte ORDER BY timestamp LIMIT 1").fetchone()
+    last = conn.execute("SELECT timestamp FROM messwerte ORDER BY timestamp DESC LIMIT 1").fetchone()
+    if not first:
+        return "datetime(timestamp)"
+    start_year = datetime.fromisoformat(first[0]).year
+    end_year = datetime.fromisoformat(last[0]).year + 1
+    current = datetime(start_year, 1, 1, tzinfo=timezone.utc)
+    end = datetime(end_year, 1, 1, tzinfo=timezone.utc)
+
+    def offset(moment):
+        return int(moment.astimezone(LOCAL_TIMEZONE).utcoffset().total_seconds())
+
+    previous_offset = offset(current)
+    cases = []
+    while current < end:
+        following = min(current + timedelta(days=1), end)
+        following_offset = offset(following)
+        if following_offset != previous_offset:
+            low, high = int(current.timestamp()), int(following.timestamp())
+            while high - low > 1:
+                middle = (low + high) // 2
+                if offset(datetime.fromtimestamp(middle, timezone.utc)) == previous_offset:
+                    low = middle
+                else:
+                    high = middle
+            boundary = datetime.fromtimestamp(high, timezone.utc).isoformat(timespec="microseconds")
+            cases.append(f"WHEN timestamp < '{boundary}' THEN datetime(timestamp, '{previous_offset:+d} seconds')")
+            previous_offset = following_offset
+        current = following
+    if not cases:
+        return f"datetime(timestamp, '{previous_offset:+d} seconds')"
+    return "CASE " + " ".join(cases) + f" ELSE datetime(timestamp, '{previous_offset:+d} seconds') END"
 
 
 def utc_midnight(d):
@@ -59,7 +92,11 @@ def get_db_connection():
     if conn.execute("PRAGMA user_version").fetchone()[0] != 3:
         conn.close()
         raise sqlite3.DatabaseError("UTC schema 3 required; migrate database first")
-    conn.create_function("local_period", 2, local_period, deterministic=True)
+    expression = calendar_expression(conn)
+    conn.execute(f"""CREATE TEMP VIEW calendar_messwerte AS SELECT *,
+        substr(({expression}), 1, 10) AS local_day,
+        substr(({expression}), 1, 7) AS local_month,
+        substr(({expression}), 1, 4) AS local_year FROM messwerte""")
     conn.row_factory = sqlite3.Row  # Damit die Ergebnisse als Dictionary zurückgegeben werden
     conn.execute("PRAGMA busy_timeout = 10000")
     conn.execute("PRAGMA foreign_keys = ON")
@@ -79,7 +116,7 @@ def get_dashboard_data():
         logger.debug("🔍 Abfrage: Momentanverbrauch")
         leistung_row = cursor.execute("""
             SELECT wirkleistung_watt, timestamp
-            FROM messwerte
+            FROM calendar_messwerte
             ORDER BY timestamp DESC
             LIMIT 1
         """).fetchone()
@@ -91,7 +128,7 @@ def get_dashboard_data():
         gesamt_row = cursor.execute("""
             SELECT MAX(bezug_kwh) AS bezug,
                    MAX(einspeisung_kwh) AS einspeisung
-            FROM messwerte
+            FROM calendar_messwerte
         """).fetchone()
         bezug = gesamt_row["bezug"] if gesamt_row and gesamt_row["bezug"] is not None else 0
         einspeisung = gesamt_row["einspeisung"] if gesamt_row and gesamt_row["einspeisung"] is not None else 0
@@ -105,7 +142,7 @@ def get_dashboard_data():
                    MAX(wirkleistung_watt) AS max_watt,
                    MIN(wirkleistung_watt) AS min_watt,
                    AVG(wirkleistung_watt) AS avg_watt
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp >= ? AND timestamp < ?
         """, (start, end)).fetchone()
         verbrauch_heute = heute_stats["verbrauch"] if heute_stats and heute_stats["verbrauch"] is not None else 0
@@ -119,7 +156,7 @@ def get_dashboard_data():
                    MAX(wirkleistung_watt) AS max_watt,
                    MIN(wirkleistung_watt) AS min_watt,
                    AVG(wirkleistung_watt) AS avg_watt
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp >= ? AND timestamp < ?
         """, (start,end)).fetchone()
         verbrauch_gestern = gestern_stats["verbrauch"] if gestern_stats and gestern_stats["verbrauch"] is not None else 0
@@ -201,7 +238,7 @@ def get_tagesverlauf():
         # Tagesverlauf-Daten abrufen
         verlauf = cursor.execute("""
             SELECT timestamp, wirkleistung_watt 
-            FROM messwerte 
+            FROM calendar_messwerte
             WHERE timestamp >= ? AND timestamp < ?
             ORDER BY timestamp ASC
         """,(start,end)).fetchall()
@@ -237,11 +274,11 @@ def get_wochenstatistik():
         start = utc_midnight(start_date)
         end = utc_midnight(start_date + timedelta(days=7))
         statistik = cursor.execute("""
-            SELECT local_period(timestamp, 10) AS datum,
+            SELECT local_day AS datum,
                    MAX(bezug_kwh) - MIN(bezug_kwh) as tagesverbrauch
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp >= ? AND timestamp < ?
-            GROUP BY local_period(timestamp, 10)
+            GROUP BY local_day
             ORDER BY datum ASC
         """, (start, end)).fetchall()
 
@@ -277,7 +314,7 @@ def get_tagesdaten():
         werte_row = cursor.execute("""
             SELECT MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch,
                    MAX(bezug_kwh) AS endstand
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp >= ? AND timestamp < ?
         """, (start, end)).fetchone()
         verbrauch = werte_row["verbrauch"] if werte_row and werte_row["verbrauch"] is not None else 0
@@ -287,7 +324,7 @@ def get_tagesdaten():
         logger.debug("🔍 Abfrage: Tagesverlauf für %s", datum)
         verlauf = cursor.execute("""
             SELECT timestamp, wirkleistung_watt
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp >= ? AND timestamp < ?
             ORDER BY timestamp ASC
         """, (start, end)).fetchall()
@@ -321,11 +358,11 @@ def get_monatsstatistik():
         # Verbrauchsdaten der letzten 12 Monate berechnen
         logger.debug("🔍 Abfrage: Monatsstatistik der letzten 12 Monate")
         statistik = cursor.execute("""
-            SELECT local_period(timestamp, 7) as monat,
+            SELECT local_month as monat,
                    MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp >= ?
-            GROUP BY local_period(timestamp, 7)
+            GROUP BY local_month
             ORDER BY monat ASC
         """, (rolling_start(12),)).fetchall()
 
@@ -352,11 +389,11 @@ def get_jahresstatistik():
         # Verbrauchsdaten der letzten 5 Jahre berechnen
         logger.debug("🔍 Abfrage: Jahresstatistik der letzten 5 Jahre")
         statistik = cursor.execute("""
-            SELECT local_period(timestamp, 4) as jahr,
+            SELECT local_year as jahr,
                    MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp >= ?
-            GROUP BY local_period(timestamp, 4)
+            GROUP BY local_year
             ORDER BY jahr ASC
         """, (rolling_start(60),)).fetchall()
 
@@ -383,8 +420,8 @@ def get_verfuegbare_tage():
         # Abrufen der Tage, für die Messwerte vorhanden sind
         logger.debug("🔍 Abfrage: Verfügbare Tage mit Messwerten")
         tage = cursor.execute("""
-            SELECT DISTINCT local_period(timestamp, 10) as datum
-            FROM messwerte
+            SELECT DISTINCT local_day as datum
+            FROM calendar_messwerte
             ORDER BY datum ASC
         """).fetchall()
 
@@ -412,17 +449,17 @@ def get_statistik():
         today_start = utc_midnight(datetime.now(LOCAL_TIMEZONE).date())
         logger.debug("🔍 Abfrage: Tages- und Monatsstatistik")
         daily_rows = cursor.execute("""
-            SELECT local_period(timestamp, 10) AS periode,
+            SELECT local_day AS periode,
                    MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
-            FROM messwerte
+            FROM calendar_messwerte
             WHERE timestamp < ?
-            GROUP BY local_period(timestamp, 10)
+            GROUP BY local_day
         """, (today_start,)).fetchall()
         monthly_rows = cursor.execute("""
-            SELECT local_period(timestamp, 7) AS periode,
+            SELECT local_month AS periode,
                    MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
-            FROM messwerte
-            GROUP BY local_period(timestamp, 7)
+            FROM calendar_messwerte
+            GROUP BY local_month
         """).fetchall()
 
         def summarize(rows, key):

@@ -116,6 +116,28 @@ class DashboardBackendTest(unittest.TestCase):
         yearly = self.client.get("/api/jahresstatistik").json
         self.assertEqual(yearly,[{"jahr":"2026","verbrauch":2}])
 
+    def test_native_calendar_projection_matches_zoneinfo_at_transitions(self):
+        zone = ZoneInfo("Europe/Berlin")
+        moments = []
+        for day in (date(2025,3,30),date(2025,10,26),date(2026,3,29),date(2026,10,25),date(2026,1,1)):
+            midnight = datetime.combine(day,datetime.min.time(),timezone.utc)
+            moments.extend(midnight+timedelta(minutes=step) for step in range(-180,181,5))
+        self.conn.executemany("INSERT INTO messwerte(timestamp) VALUES (?)",
+                             [(t.isoformat(timespec="microseconds"),) for t in moments])
+        self.conn.commit()
+        conn = self.backend.get_db_connection()
+        try:
+            rows = conn.execute("SELECT timestamp,local_day,local_month,local_year FROM calendar_messwerte").fetchall()
+            for row in rows:
+                local = datetime.fromisoformat(row["timestamp"]).astimezone(zone).isoformat()
+                self.assertEqual((row["local_day"],row["local_month"],row["local_year"]),
+                                 (local[:10],local[:7],local[:4]))
+            plan = conn.execute("EXPLAIN QUERY PLAN SELECT * FROM calendar_messwerte WHERE timestamp>=? AND timestamp<?",
+                                self.backend.get_day_range(date(2026,10,25))).fetchall()
+            self.assertIn("USING INDEX idx_timestamp", " ".join(row[3] for row in plan))
+        finally:
+            conn.close()
+
     def test_invalid_date_is_rejected(self):
         response = self.client.get("/api/tagesdaten?datum=kein-datum")
         self.assertEqual(response.status_code, 400)
