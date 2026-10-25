@@ -9,7 +9,7 @@ services:
       - /var/log:/app/logs
       - /var/www/html:/app/data
     environment:
-      - TZ=Europe/Berlin
+      - TZ=UTC
       - BAUDRATE=9600
       - MANUFACTORER=1
       - DEBUG=0

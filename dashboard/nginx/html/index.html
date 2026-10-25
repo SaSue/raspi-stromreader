@@ -334,7 +334,7 @@
     let jahresstatistikChart; // Variable für das Jahresstatistik-Diagramm
 
     function formatDatum(date) {
-      return date.toISOString().split("T")[0];
+      return new Intl.DateTimeFormat("sv-SE", {timeZone: "Europe/Berlin"}).format(date);
     }
 
     function berechneVerbrauch(daten) {
@@ -350,7 +350,7 @@
       const timestampElement = document.getElementById("timestamp-leistung");
       if (aktuell.timestamp) {
         const timestamp = new Date(aktuell.timestamp);
-        const options = { day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
+        const options = { timeZone: 'Europe/Berlin', day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' };
         timestampElement.textContent = timestamp.toLocaleString('de-DE', options);
       } else {
         timestampElement.textContent = '--.--.---- / --:--';
@@ -453,7 +453,7 @@
         console.error('Keine Daten für den Tagesverlauf verfügbar.');
         return;
       }
-      const labels = daten.map(e => new Date(e.timestamp).toLocaleTimeString());
+      const labels = daten.map(e => new Date(e.timestamp).toLocaleTimeString('de-DE', {timeZone: 'Europe/Berlin', timeZoneName: 'short'}));
       const werte = daten.map(e => e.leistung);
       new Chart(document.getElementById("verlauf"), {
         type: "line",
@@ -483,7 +483,7 @@
 
         // Letzte Aktualisierung anzeigen
         const now = new Date();
-        document.getElementById('last-update-text').textContent = `Letzte Aktualisierung: ${now.toLocaleString()}`;
+        document.getElementById('last-update-text').textContent = `Letzte Aktualisierung: ${now.toLocaleString('de-DE', {timeZone: 'Europe/Berlin', timeZoneName: 'short'})}`;
       } catch (error) {
         console.error('Fehler beim Abrufen der Dashboard-Daten:', error);
       }
@@ -573,7 +573,7 @@
         document.getElementById('tagesendstand').textContent = `${data.endstand.toFixed(2)} kWh`;
 
         // Tagesverlauf-Diagramm aktualisieren
-        const labels = data.verlauf.map(e => new Date(e.timestamp).toLocaleTimeString());
+        const labels = data.verlauf.map(e => new Date(e.timestamp).toLocaleTimeString('de-DE', {timeZone: 'Europe/Berlin', timeZoneName: 'short'}));
         const werte = data.verlauf.map(e => e.leistung);
 
         const ctx = document.getElementById('tagesverlauf').getContext('2d');
@@ -724,7 +724,7 @@
 
         // Hilfsfunktion für Datumsformatierung
         const formatDatum = (datum) => {
-          const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+          const options = { timeZone: 'Europe/Berlin', day: '2-digit', month: '2-digit', year: 'numeric' };
           return new Date(datum).toLocaleDateString('de-DE', options);
         };
 

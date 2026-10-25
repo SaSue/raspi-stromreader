@@ -2,7 +2,7 @@ import importlib.util
 import sqlite3
 import tempfile
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 from pathlib import Path
 from unittest.mock import patch
@@ -28,8 +28,8 @@ class StromreaderMonitoringTest(unittest.TestCase):
 
     def run_check(self, age):
         timestamp = (
-            datetime.now(ZoneInfo("Europe/Berlin")) - timedelta(seconds=age)
-        ).replace(tzinfo=None).isoformat()
+            datetime.now(timezone.utc) - timedelta(seconds=age)
+        ).isoformat()
         connection = sqlite3.connect(self.db_path)
         connection.execute("DELETE FROM messwerte")
         connection.execute("INSERT INTO messwerte VALUES (?)", (timestamp,))
@@ -46,6 +46,18 @@ class StromreaderMonitoringTest(unittest.TestCase):
         self.assertEqual(self.run_check(60), 0)
         self.assertEqual(self.run_check(240), 1)
         self.assertEqual(self.run_check(900), 2)
+
+    def test_autumn_rollback_does_not_select_text_maximum(self):
+        with sqlite3.connect(self.db_path) as c:
+            c.executemany("INSERT INTO messwerte VALUES (?)", [
+                ("2026-10-25T02:59:00+02:00",), ("2026-10-25T02:01:30+01:00",)])
+        class Clock(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return datetime.fromisoformat("2026-10-25T01:02:00+00:00")
+        with patch.object(plugin, "datetime", Clock), patch("sys.argv", [
+            "check", "-d", str(self.db_path)]):
+            self.assertEqual(plugin.main(),0)
 
     def test_empty_database_is_critical(self):
         with patch(

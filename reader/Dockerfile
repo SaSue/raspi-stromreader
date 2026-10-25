@@ -1,9 +1,11 @@
 FROM python:3-slim
 
+ENV TZ=UTC
+
 WORKDIR /app
 
 RUN pip install --upgrade pip
-RUN pip install pyserial crcmod
+RUN pip install pyserial crcmod tzdata
 
 COPY strom_reader.py /app/strom_reader.py
 COPY sqlite_store.py /app/sqlite_store.py

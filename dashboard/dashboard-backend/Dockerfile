@@ -1,9 +1,11 @@
 FROM python:3-slim
 
+ENV TZ=UTC
+
 WORKDIR /app
 
 RUN pip install --upgrade pip
-RUN pip install flask
+RUN pip install flask tzdata
 
 COPY dashboard-backend.py /app/dashboard-backend.py
 COPY healthcheck.py /app/healthcheck.py

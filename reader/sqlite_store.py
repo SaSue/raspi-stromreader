@@ -1,14 +1,14 @@
 import logging
 import os
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 
 class SQLiteStore:
     """Long-lived SQLite writer with one reconnect attempt per measurement."""
 
-    SCHEMA_VERSION = 2
+    SCHEMA_VERSION = 3
     VALID_JOURNAL_MODES = {"DELETE", "TRUNCATE", "PERSIST", "MEMORY", "WAL", "OFF"}
 
     def __init__(self, db_path, timeout=10.0, journal_mode="WAL"):
@@ -88,6 +88,17 @@ class SQLiteStore:
             )
 
         if current_version < self.SCHEMA_VERSION:
+            has_measurements = self.connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='messwerte'"
+            ).fetchone()
+            if has_measurements and self.connection.execute(
+                "SELECT 1 FROM messwerte LIMIT 1"
+            ).fetchone():
+                self.close()
+                raise sqlite3.DatabaseError(
+                    "UTC migration required: run tools/migrate_utc.py on a copy "
+                    "before starting this reader"
+                )
             self.create_migration_backup()
             with self.connection:
                 self.connection.execute(
@@ -158,7 +169,7 @@ class SQLiteStore:
                 """,
                 (
                     zaehler_id,
-                    datetime.now().isoformat(),
+                    datetime.now(timezone.utc).isoformat(timespec="microseconds"),
                     bezug_kwh,
                     einspeisung_kwh,
                     wirkleistung_watt,

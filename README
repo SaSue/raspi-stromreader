@@ -1,3 +1,8 @@
+UTC-Speicherung / Datenmigration (Schema 3)
+=========================================
+Vor Einsatz dieser Version bestehende Datenbank migrieren.
+Ablauf, Vorschau und Rollback: docs/utc-migration.md
+
 # README: Einrichtung und Nutzung des Projekts
 
 Dieses Projekt dient zur Verwaltung und Analyse von Stromdaten. Es bietet drei Hauptfunktionen: das Bauen des Dashboards, das Bauen des Readers und das Starten eines Dumps des Leseroutputs.

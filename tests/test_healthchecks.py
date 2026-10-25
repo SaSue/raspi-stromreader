@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo
 from unittest.mock import patch
 
 
@@ -62,10 +63,10 @@ class ReaderHealthcheckTest(unittest.TestCase):
         self.assertFalse(healthy)
         self.assertIn("old", message)
 
-    def test_naive_local_timestamp_is_supported(self):
+    def test_naive_local_timestamp_requires_migration(self):
         now = datetime.now(timezone.utc)
         local_timestamp = (
-            now.astimezone(reader_health.LOCAL_TIMEZONE)
+            now.astimezone(ZoneInfo("Europe/Berlin"))
             - timedelta(seconds=30)
         ).replace(tzinfo=None)
         temporary_directory, database = self.create_database(
@@ -75,7 +76,17 @@ class ReaderHealthcheckTest(unittest.TestCase):
 
         healthy, _ = reader_health.check_health(database, now=now)
 
+        self.assertFalse(healthy)
+
+    def test_autumn_rollback_uses_latest_insert_and_elapsed_utc(self):
+        now = datetime.fromisoformat("2026-10-25T02:02:00+01:00")
+        temporary_directory, database = self.create_database("2026-10-25T02:59:00+02:00")
+        self.addCleanup(temporary_directory.cleanup)
+        with sqlite3.connect(database) as c:
+            c.execute("INSERT INTO messwerte VALUES (?)", ("2026-10-25T02:01:30+01:00",))
+        healthy, message = reader_health.check_health(database, now=now)
         self.assertTrue(healthy)
+        self.assertIn("30s", message)
 
     def test_missing_database_is_unhealthy(self):
         healthy, _ = reader_health.check_health("/does/not/exist.sqlite")

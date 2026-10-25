@@ -3,7 +3,8 @@ import os
 import sqlite3
 import tempfile
 import unittest
-from datetime import date, timedelta
+from datetime import date, timedelta, datetime, timezone
+from zoneinfo import ZoneInfo
 from pathlib import Path
 
 
@@ -40,6 +41,7 @@ class DashboardBackendTest(unittest.TestCase):
                 wirkleistung_watt REAL
             );
             CREATE INDEX idx_timestamp ON messwerte(timestamp);
+            PRAGMA user_version=3;
             """
         )
         self.backend = load_backend(self.db_path)
@@ -50,7 +52,7 @@ class DashboardBackendTest(unittest.TestCase):
         self.temp_dir.cleanup()
 
     def insert(self, day, hour, bezug, einspeisung, watt):
-        timestamp = f"{day.isoformat()}T{hour:02d}:00:00"
+        timestamp = datetime.combine(day, datetime.min.time(), ZoneInfo("Europe/Berlin")).replace(hour=hour).astimezone(timezone.utc).isoformat(timespec="microseconds")
         self.conn.execute(
             """
             INSERT INTO messwerte
@@ -88,6 +90,31 @@ class DashboardBackendTest(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json), 7)
         self.assertEqual(response.json[-1]["datum"], (selected + timedelta(days=6)).isoformat())
+
+    def test_dst_day_bounds_and_both_autumn_hours(self):
+        for day, hours in ((date(2026, 3, 29), 23), (date(2026, 10, 25), 25)):
+            start, end = map(datetime.fromisoformat, self.backend.get_day_range(day))
+            self.assertEqual((end-start).total_seconds(), hours*3600)
+        self.conn.executemany(
+            "INSERT INTO messwerte(timestamp,bezug_kwh,wirkleistung_watt) VALUES (?, ?, ?)",
+            [("2026-10-25T00:30:00.000000+00:00",10,100),
+             ("2026-10-25T01:30:00.000000+00:00",11,200),
+             ("2026-10-24T21:59:59.000000+00:00",5,300),
+             ("2026-10-25T23:00:00.000000+00:00",20,400)])
+        self.conn.commit()
+        data = self.client.get("/api/tagesdaten?datum=2026-10-25").json
+        self.assertEqual(data["verbrauch"],1)
+        self.assertEqual([x["leistung"] for x in data["verlauf"]],[100,200])
+
+    def test_local_day_month_and_year_grouping_at_utc_boundary(self):
+        self.insert(date(2026,1,1),0,10,0,100)
+        self.insert(date(2026,1,1),1,12,0,200)
+        self.assertEqual(self.client.get("/api/verfuegbare-tage").json,["2026-01-01"])
+        stats = self.client.get("/api/statistik").json
+        self.assertEqual(stats["maxTag"],{"datum":"2026-01-01","verbrauch":2})
+        self.assertEqual(stats["maxMonat"],{"monat":"2026-01","verbrauch":2})
+        yearly = self.client.get("/api/jahresstatistik").json
+        self.assertEqual(yearly,[{"jahr":"2026","verbrauch":2}])
 
     def test_invalid_date_is_rejected(self):
         response = self.client.get("/api/tagesdaten?datum=kein-datum")

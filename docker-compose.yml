@@ -3,8 +3,12 @@ services:
   strom-dashboard-backend:
     image: ghcr.io/sasue/raspi-stromreader/dashboard-backend:latest
     container_name: strom-dashboard-backend
+    environment:
+      - TZ=UTC
     volumes:
       - /var/www/html:/app/data:ro
+    mem_limit: 256m
+    restart: unless-stopped
     networks:
       - proxy-net
 
@@ -17,13 +21,14 @@ services:
       - ./logs:/app/logs
       - /var/www/html:/app/data
     environment:
-      - TZ=Europe/Berlin # sonst wird die Zeit nicht richtig angezeigt
+      - TZ=UTC # UTC intern; Dashboard und Statistik verwenden Europe/Berlin
       - BAUDRATE=9600 # Baudrate des Readers
       - MANUFACTORER=1 # 1 = EMH, 2 und höher aktuell nicht implementiert
       - DEBUG=0 # 1 = Debug-Mode, 0 = normaler Mode - ACHTUNG: Debug-Mode ist sehr gesprächig
       - WAIT-TIMER=60 # seconds, aller wieviele Sekunden soll der Reader die Daten schreiben
       - OUTPUT=sqlite # json,sqlite - kommagetrennt, mehrere Ausgabeformate werden in Zukunft implementiert
     restart: unless-stopped
+    mem_limit: 128m
     tty: true
     networks:
       - proxy-net

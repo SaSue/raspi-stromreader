@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import sqlite3
 import logging
@@ -17,9 +18,33 @@ logging.basicConfig(
 )
 logger = logging.getLogger("dashboard-backend")
 
+LOCAL_TIMEZONE = ZoneInfo("Europe/Berlin")
+
+
+def local_period(value, length):
+    moment = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if moment.tzinfo is None:
+        raise ValueError("UTC migration required")
+    return moment.astimezone(LOCAL_TIMEZONE).isoformat()[:length]
+
+
+def utc_midnight(d):
+    return datetime.combine(d, datetime.min.time(), LOCAL_TIMEZONE).astimezone(
+        timezone.utc
+    ).isoformat(timespec="microseconds")
+
+
 def get_day_range(d: date):
-    """Return index-friendly ISO date bounds for one local calendar day."""
-    return d.isoformat(), (d + timedelta(days=1)).isoformat()
+    """Index-friendly UTC bounds for a Berlin day (23, 24 or 25 hours)."""
+    return utc_midnight(d), utc_midnight(d + timedelta(days=1))
+
+
+def rolling_start(months):
+    today = datetime.now(LOCAL_TIMEZONE).date()
+    year, month_index = divmod(today.year * 12 + today.month - 1 - months, 12)
+    # Match SQLite's overflow semantics for e.g. February 29 minus one year.
+    cutoff = date(year, month_index + 1, 1) + timedelta(days=today.day - 1)
+    return utc_midnight(cutoff)
 
 
 def parse_date(value: str):
@@ -31,6 +56,10 @@ def parse_date(value: str):
 def get_db_connection():
     logger.debug("🔌 Verbindung zur SQLite-Datenbank herstellen...")
     conn = sqlite3.connect(DB_PATH, timeout=SQLITE_TIMEOUT_SECONDS)
+    if conn.execute("PRAGMA user_version").fetchone()[0] != 3:
+        conn.close()
+        raise sqlite3.DatabaseError("UTC schema 3 required; migrate database first")
+    conn.create_function("local_period", 2, local_period, deterministic=True)
     conn.row_factory = sqlite3.Row  # Damit die Ergebnisse als Dictionary zurückgegeben werden
     conn.execute("PRAGMA busy_timeout = 10000")
     conn.execute("PRAGMA foreign_keys = ON")
@@ -67,7 +96,7 @@ def get_dashboard_data():
         bezug = gesamt_row["bezug"] if gesamt_row and gesamt_row["bezug"] is not None else 0
         einspeisung = gesamt_row["einspeisung"] if gesamt_row and gesamt_row["einspeisung"] is not None else 0
         
-        heute = date.today()
+        heute = datetime.now(LOCAL_TIMEZONE).date()
         start, end = get_day_range(heute)
         # Verbrauch und Leistungsstatistik heute gemeinsam berechnen
         logger.debug("🔍 Abfrage: Tagesstatistik heute")
@@ -81,7 +110,7 @@ def get_dashboard_data():
         """, (start, end)).fetchone()
         verbrauch_heute = heute_stats["verbrauch"] if heute_stats and heute_stats["verbrauch"] is not None else 0
 
-        gestern = date.today() - timedelta(days=1)
+        gestern = heute - timedelta(days=1)
         start, end = get_day_range(gestern)
         # Verbrauch und Leistungsstatistik gestern gemeinsam berechnen
         logger.debug("🔍 Abfrage: Tagesstatistik gestern")
@@ -99,12 +128,12 @@ def get_dashboard_data():
         logger.debug("🔍 Abfrage: Tendenz")
         
         # Aktuelle Zeit
-        jetzt = datetime.now()  
-        aktuelle_stunde = jetzt.hour
-        aktuelle_minute = jetzt.minute
+        jetzt = datetime.now(LOCAL_TIMEZONE)
 
         # Prozentualer Anteil des Tages
-        anteil_tag = (aktuelle_stunde * 60 + aktuelle_minute) / (24 * 60) * 100
+        day_start, day_end = map(datetime.fromisoformat, get_day_range(heute))
+        anteil_tag = ((jetzt.astimezone(timezone.utc) - day_start).total_seconds()
+                      / (day_end - day_start).total_seconds() * 100)
         logger.debug("🔍 Abfrage: Prozentualer Anteil des Tages: %.2f%%", anteil_tag)
 
         # Berechnung der Tendenz
@@ -167,7 +196,7 @@ def get_tagesverlauf():
     cursor = conn.cursor()
 
     try:
-        heute = date.today()
+        heute = datetime.now(LOCAL_TIMEZONE).date()
         start, end = get_day_range(heute)
         # Tagesverlauf-Daten abrufen
         verlauf = cursor.execute("""
@@ -205,14 +234,14 @@ def get_wochenstatistik():
     try:
         # Wochenstatistik-Daten abrufen (Startdatum + 6 Tage)
         logger.debug("🔍 Abfrage: Wochenstatistik ab %s", datum)
-        start = start_date.isoformat()
-        end = (start_date + timedelta(days=7)).isoformat()
+        start = utc_midnight(start_date)
+        end = utc_midnight(start_date + timedelta(days=7))
         statistik = cursor.execute("""
-            SELECT substr(timestamp, 1, 10) AS datum,
+            SELECT local_period(timestamp, 10) AS datum,
                    MAX(bezug_kwh) - MIN(bezug_kwh) as tagesverbrauch
             FROM messwerte
             WHERE timestamp >= ? AND timestamp < ?
-            GROUP BY substr(timestamp, 1, 10)
+            GROUP BY local_period(timestamp, 10)
             ORDER BY datum ASC
         """, (start, end)).fetchall()
 
@@ -292,13 +321,13 @@ def get_monatsstatistik():
         # Verbrauchsdaten der letzten 12 Monate berechnen
         logger.debug("🔍 Abfrage: Monatsstatistik der letzten 12 Monate")
         statistik = cursor.execute("""
-            SELECT strftime('%Y-%m', timestamp) as monat,
+            SELECT local_period(timestamp, 7) as monat,
                    MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
             FROM messwerte
-            WHERE timestamp >= DATE('now', '-12 months')
-            GROUP BY strftime('%Y-%m', timestamp)
+            WHERE timestamp >= ?
+            GROUP BY local_period(timestamp, 7)
             ORDER BY monat ASC
-        """).fetchall()
+        """, (rolling_start(12),)).fetchall()
 
         # Daten in ein JSON-kompatibles Format umwandeln
         statistik_data = [{"monat": row["monat"], "verbrauch": row["verbrauch"]} for row in statistik]
@@ -323,13 +352,13 @@ def get_jahresstatistik():
         # Verbrauchsdaten der letzten 5 Jahre berechnen
         logger.debug("🔍 Abfrage: Jahresstatistik der letzten 5 Jahre")
         statistik = cursor.execute("""
-            SELECT strftime('%Y', timestamp) as jahr,
+            SELECT local_period(timestamp, 4) as jahr,
                    MAX(bezug_kwh) - MIN(bezug_kwh) as verbrauch
             FROM messwerte
-            WHERE timestamp >= DATE('now', '-5 years')
-            GROUP BY strftime('%Y', timestamp)
+            WHERE timestamp >= ?
+            GROUP BY local_period(timestamp, 4)
             ORDER BY jahr ASC
-        """).fetchall()
+        """, (rolling_start(60),)).fetchall()
 
         # Daten in ein JSON-kompatibles Format umwandeln
         statistik_data = [{"jahr": row["jahr"], "verbrauch": row["verbrauch"]} for row in statistik]
@@ -354,7 +383,7 @@ def get_verfuegbare_tage():
         # Abrufen der Tage, für die Messwerte vorhanden sind
         logger.debug("🔍 Abfrage: Verfügbare Tage mit Messwerten")
         tage = cursor.execute("""
-            SELECT DISTINCT DATE(timestamp) as datum
+            SELECT DISTINCT local_period(timestamp, 10) as datum
             FROM messwerte
             ORDER BY datum ASC
         """).fetchall()
@@ -380,20 +409,20 @@ def get_statistik():
 
     try:
         # Jede Aggregationsebene nur einmal aus der Datenbank lesen.
-        today_start = date.today().isoformat()
+        today_start = utc_midnight(datetime.now(LOCAL_TIMEZONE).date())
         logger.debug("🔍 Abfrage: Tages- und Monatsstatistik")
         daily_rows = cursor.execute("""
-            SELECT substr(timestamp, 1, 10) AS periode,
+            SELECT local_period(timestamp, 10) AS periode,
                    MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
             FROM messwerte
             WHERE timestamp < ?
-            GROUP BY substr(timestamp, 1, 10)
+            GROUP BY local_period(timestamp, 10)
         """, (today_start,)).fetchall()
         monthly_rows = cursor.execute("""
-            SELECT substr(timestamp, 1, 7) AS periode,
+            SELECT local_period(timestamp, 7) AS periode,
                    MAX(bezug_kwh) - MIN(bezug_kwh) AS verbrauch
             FROM messwerte
-            GROUP BY substr(timestamp, 1, 7)
+            GROUP BY local_period(timestamp, 7)
         """).fetchall()
 
         def summarize(rows, key):

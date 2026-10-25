@@ -2,15 +2,14 @@
 import argparse
 import sqlite3
 import sys
-from datetime import datetime
-from zoneinfo import ZoneInfo
+from datetime import datetime, timezone
 
 
-def parse_timestamp(value, local_timezone):
+def parse_timestamp(value):
     timestamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
     if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=local_timezone)
-    return timestamp
+        raise ValueError("timestamp without UTC offset; UTC migration required")
+    return timestamp.astimezone(timezone.utc)
 
 
 def main():
@@ -18,7 +17,7 @@ def main():
     parser.add_argument("-d", "--database", default="/var/www/html/strom.sqlite")
     parser.add_argument("-w", "--warning", type=int, default=180)
     parser.add_argument("-c", "--critical", type=int, default=600)
-    parser.add_argument("--timezone", default="Europe/Berlin")
+    parser.add_argument("--timezone", help="Deprecated; timestamps must contain an offset")
     args = parser.parse_args()
 
     if args.warning <= 0 or args.critical <= args.warning:
@@ -30,16 +29,15 @@ def main():
             f"file:{args.database}?mode=ro", uri=True, timeout=5
         )
         row = connection.execute(
-            "SELECT MAX(timestamp) FROM messwerte"
+            "SELECT timestamp FROM messwerte ORDER BY rowid DESC LIMIT 1"
         ).fetchone()
         connection.close()
         if not row or not row[0]:
             print("CRITICAL - no meter readings found")
             return 2
 
-        local_timezone = ZoneInfo(args.timezone)
-        last_reading = parse_timestamp(row[0], local_timezone)
-        now = datetime.now(local_timezone)
+        last_reading = parse_timestamp(row[0])
+        now = datetime.now(timezone.utc)
         age = int((now - last_reading).total_seconds())
         if age < -300:
             print(f"UNKNOWN - last meter reading is {-age}s in the future")

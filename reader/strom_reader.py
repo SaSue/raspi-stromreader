@@ -10,7 +10,7 @@ import json
 import atexit
 from pathlib import Path
 from zoneinfo import ZoneInfo
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlite_store import SQLiteStore
 
 # Logging konfigurieren
@@ -422,7 +422,7 @@ while True:
         logging.debug("🔢 komplettes Telegram: %s", buffer[:idx + 7].hex())
         sml_data = buffer[:idx + 5]         # inkl. 1a + Füllbyte (1 Byte)
 
-        logging.debug("[%s]", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+        logging.debug("[%s]", datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC"))
         logging.debug("📡 SML-Telegramm erkannt (Länge: %d Bytes)", len(sml_data))
         
         # prüfen ob crc passt
@@ -588,9 +588,9 @@ while True:
             
             current_time = time.time()
             if current_time - last_json_write >= wait_time:
-                now = datetime.now(ZoneInfo("Europe/Berlin"))
-                timestamp = now.isoformat()
-                date_str = now.strftime("%Y-%m-%d")
+                now = datetime.now(timezone.utc)
+                timestamp = now.isoformat(timespec="microseconds")
+                date_str = now.astimezone(ZoneInfo("Europe/Berlin")).strftime("%Y-%m-%d")
     
                 output_data = {
                     "leistung": mein_zaehler.leistung.wert,

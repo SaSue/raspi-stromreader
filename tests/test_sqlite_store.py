@@ -74,46 +74,21 @@ class SQLiteStoreTest(unittest.TestCase):
         connection.commit()
         connection.close()
 
+        with self.assertRaisesRegex(sqlite3.DatabaseError, "UTC migration required"):
+            SQLiteStore(self.db_path)
+        with sqlite3.connect(self.db_path) as conn:
+            self.assertEqual(conn.execute("SELECT timestamp FROM messwerte").fetchone()[0],
+                             "2025-01-01T00:00:00")
+            self.assertEqual(conn.execute("PRAGMA user_version").fetchone()[0], 0)
+
+    def test_writes_canonical_utc_and_reopens(self):
         store = SQLiteStore(self.db_path)
-
-        self.assertEqual(
-            store.connection.execute("PRAGMA user_version").fetchone()[0],
-            SQLiteStore.SCHEMA_VERSION,
-        )
-        self.assertEqual(
-            store.connection.execute("SELECT COUNT(*) FROM messwerte").fetchone()[0], 1
-        )
-        self.assertIsNotNone(
-            store.connection.execute(
-                "SELECT name FROM sqlite_master WHERE name = 'idx_timestamp'"
-            ).fetchone()
-        )
-        self.assertTrue(store.backup_path.exists())
-        backup = sqlite3.connect(store.backup_path)
-        self.assertEqual(backup.execute("PRAGMA integrity_check").fetchone()[0], "ok")
-        self.assertEqual(backup.execute("SELECT COUNT(*) FROM messwerte").fetchone()[0], 1)
-        backup.close()
+        store.save("meter-1", "EMH", 1, 0, 10)
+        timestamp = store.connection.execute("SELECT timestamp FROM messwerte").fetchone()[0]
+        self.assertRegex(timestamp, r"T\d{2}:\d{2}:\d{2}\.\d{6}\+00:00$")
         store.close()
-
-    def test_migration_is_idempotent_and_does_not_replace_backup(self):
-        store = SQLiteStore(self.db_path)
-        store.save("meter-1", "EMH", 1.0, 0.0, 10)
-        store.close()
-
-        # Simulate a pre-1.1.3 database once so that a rollback backup is created.
-        connection = sqlite3.connect(self.db_path)
-        connection.execute("PRAGMA user_version = 0")
-        connection.commit()
-        connection.close()
-        migrated = SQLiteStore(self.db_path)
-        backup_mtime = migrated.backup_path.stat().st_mtime_ns
-        migrated.close()
-
         reopened = SQLiteStore(self.db_path)
-        self.assertEqual(reopened.backup_path.stat().st_mtime_ns, backup_mtime)
-        self.assertEqual(
-            reopened.connection.execute("SELECT COUNT(*) FROM messwerte").fetchone()[0], 1
-        )
+        self.assertEqual(reopened.connection.execute("PRAGMA user_version").fetchone()[0], 3)
         reopened.close()
 
     def test_migration_stops_when_existing_backup_is_invalid(self):
