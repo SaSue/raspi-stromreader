@@ -16,6 +16,9 @@ env:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ["3.13", "3.15"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -23,7 +26,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: ${{ matrix.python }}
           cache: pip
           cache-dependency-path: requirements-dev.txt
 
@@ -84,6 +87,7 @@ jobs:
           context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: true
+          pull: true
           platforms: linux/arm64
           tags: |
             ${{ env.REGISTRY }}/${{ steps.repo.outputs.repo }}/${{ matrix.image_suffix }}:${{ steps.meta.outputs.tag }}
